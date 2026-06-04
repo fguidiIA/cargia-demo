@@ -1,0 +1,19 @@
+{
+  "name": "Cargia",
+  "short_name": "Cargia",
+  "description": "Control de carga de entrenamiento",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c1322",
+  "theme_color": "#0c1322",
+  "icons": [
+    {
+      "src": "cargia-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
