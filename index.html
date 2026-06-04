@@ -45,7 +45,7 @@ const I18N = {
     tagline:"Control de carga de entrenamiento", login_as:"Elige cómo quieres entrar",
     coach:"Preparador físico", athlete:"Deportista", demo_note:"Prototipo de demostración · datos de ejemplo",
     logout:"Salir",
-    nav_profile:"Perfil", nav_athletes:"Atletas", nav_teams:"Equipos", nav_sessions:"Sesiones", nav_results:"Resultados",
+    nav_profile:"Perfil", nav_athletes:"Deportistas", nav_teams:"Equipos", nav_sessions:"Sesiones", nav_results:"Carga",
     name:"Nombre", email:"Correo", username:"Usuario", role:"Rol", save:"Guardar", saved:"¡Guardado!",
     teams_title:"Equipos", new_team:"Nuevo equipo", team_name:"Nombre del equipo", members:"Deportistas",
     create:"Crear", cancel:"Cancelar", athletes_count:(n)=>`${n} deportista${n===1?"":"s"}`,
@@ -55,7 +55,7 @@ const I18N = {
     copy:"Copiar", copied:"¡Copiado!", show_acwr_athlete:"ACWR visible para el deportista",
     sessions_title:"Sesiones de entrenamiento", new_session:"Nueva sesión", select_team:"Equipo", date:"Fecha",
     minutes_each:"Minutos por deportista (30–250)", completed:"completado", pending:"Pendiente", minutes_label:"min",
-    results_title:"Resultados y carga", athlete_col:"Deportista", load_col:"Carga (últ.)",
+    results_title:"Carga", athlete_col:"Deportista", load_col:"Carga (últ.)",
     acute:"Aguda (7 d)", chronic:"Crónica (28 d)", acwr:"ACWR", no_data:"Sin datos", visible_col:"Visible al deportista",
     legend:"Escala ACWR",
     leg_blue:"< 0,8 · baja carga / desentreno", leg_green:"0,8–1,3 · zona óptima",
@@ -71,7 +71,7 @@ const I18N = {
     tagline:"Training load monitoring", login_as:"Choose how you want to sign in",
     coach:"Strength coach", athlete:"Athlete", demo_note:"Demo prototype · sample data",
     logout:"Sign out",
-    nav_profile:"Profile", nav_athletes:"Athletes", nav_teams:"Teams", nav_sessions:"Sessions", nav_results:"Results",
+    nav_profile:"Profile", nav_athletes:"Athletes", nav_teams:"Teams", nav_sessions:"Sessions", nav_results:"Load",
     name:"Name", email:"Email", username:"Username", role:"Role", save:"Save", saved:"Saved!",
     teams_title:"Teams", new_team:"New team", team_name:"Team name", members:"Athletes",
     create:"Create", cancel:"Cancel", athletes_count:(n)=>`${n} athlete${n===1?"":"s"}`,
@@ -81,7 +81,7 @@ const I18N = {
     copy:"Copy", copied:"Copied!", show_acwr_athlete:"ACWR visible to athlete",
     sessions_title:"Training sessions", new_session:"New session", select_team:"Team", date:"Date",
     minutes_each:"Minutes per athlete (30–250)", completed:"completed", pending:"Pending", minutes_label:"min",
-    results_title:"Results & load", athlete_col:"Athlete", load_col:"Load (last)",
+    results_title:"Load", athlete_col:"Athlete", load_col:"Load (last)",
     acute:"Acute (7 d)", chronic:"Chronic (28 d)", acwr:"ACWR", no_data:"No data", visible_col:"Visible to athlete",
     legend:"ACWR scale",
     leg_blue:"< 0.8 · undertraining", leg_green:"0.8–1.3 · sweet spot",
@@ -288,7 +288,7 @@ function TopBar({t, LangToggle, onLogout, tabs, tab, setTab}) {
 function CoachApp(props) {
   const {t} = props;
   const [tab, setTab] = useState("results");
-  const tabs = [["profile",t.nav_profile],["athletes",t.nav_athletes],["teams",t.nav_teams],["sessions",t.nav_sessions],["results",t.nav_results]];
+  const tabs = [["sessions",t.nav_sessions],["results",t.nav_results],["teams",t.nav_teams],["athletes",t.nav_athletes],["profile",t.nav_profile]];
   return (
     <div>
       <TopBar t={t} LangToggle={props.LangToggle} onLogout={props.onLogout} tabs={tabs} tab={tab} setTab={setTab}/>
