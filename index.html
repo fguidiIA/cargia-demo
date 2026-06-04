@@ -248,9 +248,9 @@ function Login({t, LangToggle, onPick}) {
       <div style={{display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", maxWidth:520, margin:"0 auto"}}>
         {[["coach",t.coach,C.brand],["athlete",t.athlete,C.panel2]].map(([r,label,bg])=>(
           <button key={r} onClick={()=>onPick(r)} style={{...card, flex:"1 1 200px", cursor:"pointer",
-            background:bg, borderColor:r==="coach"?C.brand:C.line, padding:"28px 18px"}}>
+            background:bg, borderColor:r==="coach"?C.brand:C.line, padding:"28px 18px", color:"#fff"}}>
             <div style={{fontSize:32, marginBottom:8}}>{r==="coach"?"🎯":"🏃"}</div>
-            <div style={{fontWeight:700, fontSize:17}}>{label}</div>
+            <div style={{fontWeight:700, fontSize:17, color:"#fff"}}>{label}</div>
           </button>
         ))}
       </div>
