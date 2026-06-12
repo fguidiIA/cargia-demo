@@ -344,7 +344,6 @@ function CoachApp({t, lang, LangToggle, profile}) {
   const [loading, setLoading] = useState(true);
 
   async function loadAll() {
-    setLoading(true);
     const [a, tm, s, w, well, inj] = await Promise.all([
       db.from("profiles").select("id,full_name,email,username,acwr_visible").eq("coach_id", profile.id).eq("role","athlete").order("full_name"),
       db.from("teams").select("id,name,team_members(athlete_id)").eq("coach_id", profile.id).order("name"),
@@ -942,7 +941,6 @@ function AthleteApp({t, lang, LangToggle, profile}) {
   const [active, setActive] = useState(null);
 
   async function loadMine(){
-    setLoading(true);
     const [s, w, inj] = await Promise.all([
       db.from("session_athletes")
         .select("id,minutes,rpe,submitted_at,sessions(id,session_date,team_id,teams(name))")
