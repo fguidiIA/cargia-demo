@@ -92,7 +92,7 @@ const I18N = {
     injuries_title:"Lesiones", new_injury:"Nueva lesión", select_athlete:"Deportista",
     i_body:"Zona", i_type:"Tipo", i_mechanism:"Mecanismo", i_onset:"Fecha de inicio", i_severity:"Gravedad (1-5)",
     i_status:"Estado", i_days:"Días de baja", i_return:"Vuelta prevista", i_notes:"Notas",
-    no_injuries:"Sin lesiones registradas.", my_injuries:"Mis lesiones",
+    no_injuries:"Sin lesiones registradas.", my_injuries:"Mis lesiones", select_placeholder:"— Selecciona —",
     st_active:"Activa", st_in_treatment:"En tratamiento", st_monitoring:"En seguimiento", st_recovered:"Recuperada",
     change_password:"Cambiar contraseña", new_password:"Nueva contraseña", repeat_password:"Repite la contraseña",
     pwd_mismatch:"Las contraseñas no coinciden", pwd_short:"Mínimo 6 caracteres", pwd_changed:"¡Contraseña actualizada!",
@@ -138,7 +138,7 @@ const I18N = {
     injuries_title:"Injuries", new_injury:"New injury", select_athlete:"Athlete",
     i_body:"Area", i_type:"Type", i_mechanism:"Mechanism", i_onset:"Onset date", i_severity:"Severity (1-5)",
     i_status:"Status", i_days:"Days lost", i_return:"Expected return", i_notes:"Notes",
-    no_injuries:"No injuries recorded.", my_injuries:"My injuries",
+    no_injuries:"No injuries recorded.", my_injuries:"My injuries", select_placeholder:"— Select —",
     st_active:"Active", st_in_treatment:"In treatment", st_monitoring:"Monitoring", st_recovered:"Recovered",
     change_password:"Change password", new_password:"New password", repeat_password:"Repeat password",
     pwd_mismatch:"Passwords don't match", pwd_short:"Minimum 6 characters", pwd_changed:"Password updated!",
@@ -360,16 +360,18 @@ function CoachApp({t, lang, LangToggle, profile}) {
   const [acwr, setAcwr] = useState([]);
   const [wellness, setWellness] = useState([]);
   const [injuries, setInjuries] = useState([]);
+  const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
 
   async function loadAll() {
-    const [a, tm, s, w, well, inj] = await Promise.all([
+    const [a, tm, s, w, well, inj, cat] = await Promise.all([
       db.from("profiles").select("id,full_name,email,username,acwr_visible").eq("coach_id", profile.id).eq("role","athlete").order("full_name"),
       db.from("teams").select("id,name,team_members(athlete_id)").eq("coach_id", profile.id).order("name"),
       db.from("sessions").select("id,team_id,session_date,session_athletes(id,athlete_id,minutes,rpe,submitted_at)").order("session_date",{ascending:false}),
       db.from("v_athlete_acwr").select("*"),
       db.from("wellness_entries").select("*").order("entry_date",{ascending:false}),
       db.from("injuries").select("*").order("onset_date",{ascending:false}),
+      db.from("injury_catalog").select("*"),
     ]);
     setAthletes(a.data||[]);
     setTeams((tm.data||[]).map(x=>({ id:x.id, name:x.name, memberIds:(x.team_members||[]).map(m=>m.athlete_id) })));
@@ -377,6 +379,7 @@ function CoachApp({t, lang, LangToggle, profile}) {
     setAcwr(w.data||[]);
     setWellness(well.data||[]);
     setInjuries(inj.data||[]);
+    setCatalog(cat.data||[]);
     setLoading(false);
   }
   useEffect(() => { loadAll(); }, []);
@@ -392,7 +395,7 @@ function CoachApp({t, lang, LangToggle, profile}) {
             {tab==="sessions" && <Sessions t={t} lang={lang} profile={profile} athletes={athletes} teams={teams} sessions={sessions} reload={loadAll}/>}
             {tab==="results"  && <Results t={t} lang={lang} athletes={athletes} teams={teams} sessions={sessions} acwr={acwr} reload={loadAll}/>}
             {tab==="wellness" && <WellnessCoach t={t} lang={lang} athletes={athletes} teams={teams} wellness={wellness}/>}
-            {tab==="injuries" && <InjuriesCoach t={t} lang={lang} profile={profile} athletes={athletes} injuries={injuries} reload={loadAll}/>}
+            {tab==="injuries" && <InjuriesCoach t={t} lang={lang} profile={profile} athletes={athletes} injuries={injuries} catalog={catalog} reload={loadAll}/>}
             {tab==="teams"    && <Teams t={t} athletes={athletes} teams={teams} reload={loadAll}/>}
             {tab==="athletes" && <AthletesAdmin t={t} athletes={athletes} reload={loadAll}/>}
             {tab==="profile"  && <CoachProfile t={t} profile={profile}/>}
@@ -889,12 +892,15 @@ function WellnessCoach({t, lang, athletes, teams, wellness}) {
 }
 
 /* ---------------- Lesiones (Preparador) ---------------- */
-function InjuriesCoach({t, lang, profile, athletes, injuries, reload}) {
+function InjuriesCoach({t, lang, profile, athletes, injuries, catalog, reload}) {
   const [creating,setCreating] = useState(false);
   const todayStr = new Date().toISOString().slice(0,10);
   const empty = { athlete_id:(athletes[0]?athletes[0].id:""), body_area:"", injury_type:"", mechanism:"", onset_date:todayStr, severity:3, status:"active", days_lost:0, expected_return:"", notes:"" };
   const [f,setF] = useState(empty);
   const [busy,setBusy] = useState(false);
+
+  const opts = (kind)=> (catalog||[]).filter(c=>c.kind===kind && c.active!==false).sort((a,b)=>a.sort_order-b.sort_order);
+  const labelOf = (c)=> lang==="es" ? c.label_es : (c.label_en||c.label_es);
 
   async function create(){
     if(!f.athlete_id || !f.body_area.trim()) return;
@@ -925,9 +931,27 @@ function InjuriesCoach({t, lang, profile, athletes, injuries, reload}) {
               {athletes.map(a=><option key={a.id} value={a.id}>{a.full_name}</option>)}
             </select>
           </label>
-          <Field label={t.i_body} value={f.body_area} onChange={(v)=>setF({...f,body_area:v})}/>
-          <Field label={t.i_type} value={f.injury_type} onChange={(v)=>setF({...f,injury_type:v})}/>
-          <Field label={t.i_mechanism} value={f.mechanism} onChange={(v)=>setF({...f,mechanism:v})}/>
+          <label style={{display:"block", marginBottom:14}}>
+            <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.i_body}</span>
+            <select value={f.body_area} onChange={(e)=>setF({...f,body_area:e.target.value})} style={inputStyle}>
+              <option value="">{t.select_placeholder}</option>
+              {opts("body_area").map(c=><option key={c.id} value={c.label_es}>{labelOf(c)}</option>)}
+            </select>
+          </label>
+          <label style={{display:"block", marginBottom:14}}>
+            <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.i_type}</span>
+            <select value={f.injury_type} onChange={(e)=>setF({...f,injury_type:e.target.value})} style={inputStyle}>
+              <option value="">{t.select_placeholder}</option>
+              {opts("injury_type").map(c=><option key={c.id} value={c.label_es}>{labelOf(c)}</option>)}
+            </select>
+          </label>
+          <label style={{display:"block", marginBottom:14}}>
+            <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.i_mechanism}</span>
+            <select value={f.mechanism} onChange={(e)=>setF({...f,mechanism:e.target.value})} style={inputStyle}>
+              <option value="">{t.select_placeholder}</option>
+              {opts("mechanism").map(c=><option key={c.id} value={c.label_es}>{labelOf(c)}</option>)}
+            </select>
+          </label>
           <Field label={t.i_onset} type="date" value={f.onset_date} onChange={(v)=>setF({...f,onset_date:v})}/>
           <Field label={t.i_severity} type="number" value={f.severity} onChange={(v)=>setF({...f,severity:v})}/>
           <label style={{display:"block", marginBottom:14}}>
