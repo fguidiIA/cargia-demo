@@ -39,7 +39,7 @@ const { useState, useEffect, useMemo } = React;
    La anon key es pública y segura: la protección la da el RLS.
 =================================================================== */
 const SUPABASE_URL      = "https://beuajnzeduzmkusuyccm.supabase.co";   // tu Project URL
-const SUPABASE_ANON_KEY = "TU_ANON_KEY";                  // <-- pega aquí tu anon key (la larga, eyJ...)
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldWFqbnplZHV6bWt1c3V5Y2NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0NDYsImV4cCI6MjA5NjU5NTQ0Nn0.bFZUeVO284An23BtuV9so61_Gzy_5iGpik1BTRM9Voo";                  // <-- pega aquí tu anon key (la larga, eyJ...)
 /* =================================================================== */
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -62,7 +62,7 @@ const I18N = {
     nav_profile:"Perfil", nav_athletes:"Deportistas", nav_teams:"Equipos", nav_sessions:"Sesiones", nav_results:"Carga",
     name:"Nombre", email:"Correo", username:"Usuario", role:"Rol", save:"Guardar", saved:"¡Guardado!",
     teams_title:"Equipos", new_team:"Nuevo equipo", team_name:"Nombre del equipo", members:"Deportistas",
-    create:"Crear", cancel:"Cancelar", athletes_count:(n)=>`${n} deportista${n===1?"":"s"}`,
+    create:"Crear", cancel:"Cancelar", edit:"Editar", athletes_count:(n)=>`${n} deportista${n===1?"":"s"}`,
     athletes_title:"Deportistas", new_athlete:"Nuevo deportista",
     temp_password:"Contraseña temporal",
     credentials_note:"Comparte estas credenciales con el deportista. Podrá cambiarlas al entrar.",
@@ -104,7 +104,7 @@ const I18N = {
     nav_profile:"Profile", nav_athletes:"Athletes", nav_teams:"Teams", nav_sessions:"Sessions", nav_results:"Load",
     name:"Name", email:"Email", username:"Username", role:"Role", save:"Save", saved:"Saved!",
     teams_title:"Teams", new_team:"New team", team_name:"Team name", members:"Athletes",
-    create:"Create", cancel:"Cancel", athletes_count:(n)=>`${n} athlete${n===1?"":"s"}`,
+    create:"Create", cancel:"Cancel", edit:"Edit", athletes_count:(n)=>`${n} athlete${n===1?"":"s"}`,
     athletes_title:"Athletes", new_athlete:"New athlete",
     temp_password:"Temporary password",
     credentials_note:"Share these credentials with the athlete. They can change them on first login.",
@@ -482,6 +482,9 @@ function Teams({t, athletes, teams, reload}) {
   const [name,setName] = useState("");
   const [picked,setPicked] = useState([]);
   const [busy,setBusy] = useState(false);
+  const [editingId,setEditingId] = useState(null);
+  const [editName,setEditName] = useState("");
+  const [editPicked,setEditPicked] = useState([]);
 
   async function create(){
     if(!name.trim()) return;
@@ -493,6 +496,23 @@ function Teams({t, athletes, teams, reload}) {
     reload();
   }
   const toggle = (id)=> setPicked(picked.includes(id)?picked.filter(x=>x!==id):[...picked,id]);
+
+  function startEdit(tm){ setEditingId(tm.id); setEditName(tm.name); setEditPicked([...tm.memberIds]); }
+  const toggleEdit = (id)=> setEditPicked(editPicked.includes(id)?editPicked.filter(x=>x!==id):[...editPicked,id]);
+
+  async function saveEdit(tm){
+    setBusy(true);
+    if(editName.trim() && editName !== tm.name){
+      await db.from("teams").update({ name:editName }).eq("id", tm.id);
+    }
+    const cur = tm.memberIds;
+    const toAdd = editPicked.filter(id=>!cur.includes(id));
+    const toRemove = cur.filter(id=>!editPicked.includes(id));
+    if(toAdd.length) await db.from("team_members").insert(toAdd.map(aid=>({team_id:tm.id, athlete_id:aid})));
+    if(toRemove.length) await db.from("team_members").delete().eq("team_id", tm.id).in("athlete_id", toRemove);
+    setBusy(false); setEditingId(null);
+    reload();
+  }
 
   return (
     <div>
@@ -521,12 +541,36 @@ function Teams({t, athletes, teams, reload}) {
       <div style={{display:"grid", gap:12}}>
         {teams.map(tm=>(
           <div key={tm.id} style={card}>
-            <div style={{fontWeight:700, fontSize:17, fontFamily:"Sora"}}>{tm.name}</div>
-            <div style={{color:C.sub, fontSize:13, marginTop:4}}>{t.athletes_count(tm.memberIds.length)}</div>
-            <div style={{display:"flex", flexWrap:"wrap", gap:6, marginTop:10}}>
-              {tm.memberIds.map(id=>{ const a=athletes.find(x=>x.id===id);
-                return <span key={id} style={{background:C.panel2, padding:"5px 11px", borderRadius:999, fontSize:13}}>{a?a.full_name:"—"}</span>; })}
-            </div>
+            {editingId === tm.id ? (
+              <div>
+                <Field label={t.team_name} value={editName} onChange={setEditName}/>
+                <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.members}</span>
+                <div style={{display:"flex", flexWrap:"wrap", gap:8, margin:"8px 0 16px"}}>
+                  {athletes.map(a=>(
+                    <button key={a.id} onClick={()=>toggleEdit(a.id)}
+                      style={btn(editPicked.includes(a.id)?C.brand:C.panel2,{padding:"8px 13px", fontSize:13, color:editPicked.includes(a.id)?"#fff":C.sub})}>
+                      {a.full_name}
+                    </button>
+                  ))}
+                </div>
+                <div style={{display:"flex", gap:10}}>
+                  <button disabled={busy} onClick={()=>saveEdit(tm)} style={btn(C.brand,{opacity:busy?0.7:1})}>{t.save}</button>
+                  <button onClick={()=>setEditingId(null)} style={btn(C.panel2,{color:C.sub})}>{t.cancel}</button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:10}}>
+                  <div style={{fontWeight:700, fontSize:17, fontFamily:"Sora"}}>{tm.name}</div>
+                  <button onClick={()=>startEdit(tm)} style={btn(C.panel2,{padding:"7px 14px", fontSize:13, color:C.text})}>{t.edit}</button>
+                </div>
+                <div style={{color:C.sub, fontSize:13, marginTop:4}}>{t.athletes_count(tm.memberIds.length)}</div>
+                <div style={{display:"flex", flexWrap:"wrap", gap:6, marginTop:10}}>
+                  {tm.memberIds.map(id=>{ const a=athletes.find(x=>x.id===id);
+                    return <span key={id} style={{background:C.panel2, padding:"5px 11px", borderRadius:999, fontSize:13}}>{a?a.full_name:"—"}</span>; })}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
