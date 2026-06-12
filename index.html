@@ -38,8 +38,8 @@ const { useState, useEffect, useMemo } = React;
    Pega tu Project URL y tu anon key (Settings → API en Supabase).
    La anon key es pública y segura: la protección la da el RLS.
 =================================================================== */
-const SUPABASE_URL      = "https://beuajnzeduzmkusuyccm.supabase.co";   // <-- pega tu Project URL
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldWFqbnplZHV6bWt1c3V5Y2NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0NDYsImV4cCI6MjA5NjU5NTQ0Nn0.bFZUeVO284An23BtuV9so61_Gzy_5iGpik1BTRM9Voo";                  // <-- pega tu anon key
+const SUPABASE_URL      = "https://beuajnzeduzmkusuyccm.supabase.co";   // tu Project URL
+const SUPABASE_ANON_KEY = "TU_ANON_KEY";                  // <-- pega aquí tu anon key (la larga, eyJ...)
 /* =================================================================== */
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -79,6 +79,19 @@ const I18N = {
     your_sessions:"Tus sesiones", complete_survey:"Completar", done:"Entregado",
     your_acwr:"Tu ACWR", no_pending:"No tienes sesiones pendientes.",
     rpe_question:"¿Cuánto de duro ha sido el entrenamiento?",
+    nav_training:"Entreno", nav_wellness:"Bienestar", nav_injuries:"Lesiones",
+    wellness_title:"Bienestar", wellness_today:"Check-in de hoy", wellness_saved:"¡Bienestar guardado!",
+    w_sleep_q:"Calidad del sueño", w_sleep_h:"Horas de sueño", w_fatigue:"Fatiga",
+    w_soreness:"Agujetas", w_stress:"Estrés", w_mood:"Ánimo", w_notes:"Notas (opcional)", w_score:"Índice",
+    w_hint_good:"1 = malo · 5 = bueno", w_hint_bad:"1 = nada · 5 = mucho",
+    no_wellness:"Sin registro de bienestar.", latest:"Último",
+    injuries_title:"Lesiones", new_injury:"Nueva lesión", select_athlete:"Deportista",
+    i_body:"Zona", i_type:"Tipo", i_mechanism:"Mecanismo", i_onset:"Fecha de inicio", i_severity:"Gravedad (1-5)",
+    i_status:"Estado", i_days:"Días de baja", i_return:"Vuelta prevista", i_notes:"Notas",
+    no_injuries:"Sin lesiones registradas.", my_injuries:"Mis lesiones",
+    st_active:"Activa", st_in_treatment:"En tratamiento", st_monitoring:"En seguimiento", st_recovered:"Recuperada",
+    change_password:"Cambiar contraseña", new_password:"Nueva contraseña", repeat_password:"Repite la contraseña",
+    pwd_mismatch:"Las contraseñas no coinciden", pwd_short:"Mínimo 6 caracteres", pwd_changed:"¡Contraseña actualizada!",
     bands:["Baja carga","Zona óptima","Precaución","Riesgo alto","Sin datos"],
     rpe:["Nada (reposo)","Muy, muy suave","Suave","Moderado","Algo duro","Duro",
          "Entre duro y muy duro","Muy duro","Muy, muy duro","Casi máximo","Máximo"],
@@ -108,6 +121,19 @@ const I18N = {
     your_sessions:"Your sessions", complete_survey:"Complete", done:"Submitted",
     your_acwr:"Your ACWR", no_pending:"You have no pending sessions.",
     rpe_question:"How hard was the session?",
+    nav_training:"Training", nav_wellness:"Wellness", nav_injuries:"Injuries",
+    wellness_title:"Wellness", wellness_today:"Today's check-in", wellness_saved:"Wellness saved!",
+    w_sleep_q:"Sleep quality", w_sleep_h:"Sleep hours", w_fatigue:"Fatigue",
+    w_soreness:"Soreness", w_stress:"Stress", w_mood:"Mood", w_notes:"Notes (optional)", w_score:"Score",
+    w_hint_good:"1 = bad · 5 = good", w_hint_bad:"1 = none · 5 = a lot",
+    no_wellness:"No wellness entry.", latest:"Latest",
+    injuries_title:"Injuries", new_injury:"New injury", select_athlete:"Athlete",
+    i_body:"Area", i_type:"Type", i_mechanism:"Mechanism", i_onset:"Onset date", i_severity:"Severity (1-5)",
+    i_status:"Status", i_days:"Days lost", i_return:"Expected return", i_notes:"Notes",
+    no_injuries:"No injuries recorded.", my_injuries:"My injuries",
+    st_active:"Active", st_in_treatment:"In treatment", st_monitoring:"Monitoring", st_recovered:"Recovered",
+    change_password:"Change password", new_password:"New password", repeat_password:"Repeat password",
+    pwd_mismatch:"Passwords don't match", pwd_short:"Minimum 6 characters", pwd_changed:"Password updated!",
     bands:["Undertraining","Sweet spot","Caution","High risk","No data"],
     rpe:["Rest (nothing at all)","Very, very easy","Easy","Moderate","Somewhat hard","Hard",
          "Hard to very hard","Very hard","Very, very hard","Near maximal","Maximal"],
@@ -127,6 +153,12 @@ function acwrColor(v, hasData) {
   return C.red;
 }
 function bandIndex(v, hasData){ if(!hasData||v===0) return 4; if(v<0.8) return 0; if(v<=1.3) return 1; if(v<=1.6) return 2; return 3; }
+
+function wellnessColor(score){ if(score==null) return C.gray; if(score>=20) return C.green; if(score>=14) return C.orange; return C.red; }
+function latestWellnessByAthlete(rows){ const m={}; for(const w of rows){ if(!m[w.athlete_id]) m[w.athlete_id]=w; } return m; }
+const INJURY_STATUS = ["active","in_treatment","monitoring","recovered"];
+function injuryColor(s){ return s==="active"?C.red : s==="in_treatment"?C.orange : s==="monitoring"?C.blue : C.green; }
+function injuryStatusLabel(t,s){ return ({active:t.st_active,in_treatment:t.st_in_treatment,monitoring:t.st_monitoring,recovered:t.st_recovered})[s]||s; }
 
 /* ---------------- UI base ---------------- */
 const Mark = ({size=30}) => (
@@ -158,6 +190,22 @@ function Toggle({on, onClick}) {
       background:on?C.green:C.line, position:"relative" }}>
       <span style={{ position:"absolute", top:3, left:on?23:3, width:20, height:20, borderRadius:"50%", background:"#fff" }} />
     </button>
+  );
+}
+function Scale({label, hint, value, onChange}) {
+  return (
+    <div style={{marginBottom:14}}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline"}}>
+        <span style={{color:C.text, fontSize:14, fontWeight:600}}>{label}</span>
+        <span style={{color:C.gray, fontSize:11}}>{hint}</span>
+      </div>
+      <div style={{display:"flex", gap:6, marginTop:6}}>
+        {[1,2,3,4,5].map(n=>(
+          <button key={n} onClick={()=>onChange(n)}
+            style={btn(value===n?C.brand:C.panel2,{flex:1, padding:"11px 0", fontSize:15, color:value===n?"#fff":C.sub})}>{n}</button>
+        ))}
+      </div>
+    </div>
   );
 }
 function Splash({t}) {
@@ -291,25 +339,31 @@ function CoachApp({t, lang, LangToggle, profile}) {
   const [teams, setTeams] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [acwr, setAcwr] = useState([]);
+  const [wellness, setWellness] = useState([]);
+  const [injuries, setInjuries] = useState([]);
   const [loading, setLoading] = useState(true);
 
   async function loadAll() {
     setLoading(true);
-    const [a, tm, s, w] = await Promise.all([
+    const [a, tm, s, w, well, inj] = await Promise.all([
       db.from("profiles").select("id,full_name,email,username,acwr_visible").eq("coach_id", profile.id).eq("role","athlete").order("full_name"),
       db.from("teams").select("id,name,team_members(athlete_id)").eq("coach_id", profile.id).order("name"),
       db.from("sessions").select("id,team_id,session_date,session_athletes(id,athlete_id,minutes,rpe,submitted_at)").order("session_date",{ascending:false}),
       db.from("v_athlete_acwr").select("*"),
+      db.from("wellness_entries").select("*").order("entry_date",{ascending:false}),
+      db.from("injuries").select("*").order("onset_date",{ascending:false}),
     ]);
     setAthletes(a.data||[]);
     setTeams((tm.data||[]).map(x=>({ id:x.id, name:x.name, memberIds:(x.team_members||[]).map(m=>m.athlete_id) })));
     setSessions(s.data||[]);
     setAcwr(w.data||[]);
+    setWellness(well.data||[]);
+    setInjuries(inj.data||[]);
     setLoading(false);
   }
   useEffect(() => { loadAll(); }, []);
 
-  const tabs = [["sessions",t.nav_sessions],["results",t.nav_results],["teams",t.nav_teams],["athletes",t.nav_athletes],["profile",t.nav_profile]];
+  const tabs = [["sessions",t.nav_sessions],["results",t.nav_results],["wellness",t.nav_wellness],["injuries",t.nav_injuries],["teams",t.nav_teams],["athletes",t.nav_athletes],["profile",t.nav_profile]];
 
   return (
     <div>
@@ -319,6 +373,8 @@ function CoachApp({t, lang, LangToggle, profile}) {
           <React.Fragment>
             {tab==="sessions" && <Sessions t={t} lang={lang} profile={profile} athletes={athletes} teams={teams} sessions={sessions} reload={loadAll}/>}
             {tab==="results"  && <Results t={t} lang={lang} athletes={athletes} teams={teams} sessions={sessions} acwr={acwr} reload={loadAll}/>}
+            {tab==="wellness" && <WellnessCoach t={t} lang={lang} athletes={athletes} teams={teams} wellness={wellness}/>}
+            {tab==="injuries" && <InjuriesCoach t={t} lang={lang} profile={profile} athletes={athletes} injuries={injuries} reload={loadAll}/>}
             {tab==="teams"    && <Teams t={t} athletes={athletes} teams={teams} reload={loadAll}/>}
             {tab==="athletes" && <AthletesAdmin t={t} athletes={athletes} reload={loadAll}/>}
             {tab==="profile"  && <CoachProfile t={t} profile={profile}/>}
@@ -337,12 +393,15 @@ function CoachProfile({t, profile}) {
     setOk(true); setTimeout(()=>setOk(false),1500);
   }
   return (
-    <div style={{...card, maxWidth:480}}>
-      <h2 style={{fontFamily:"Sora", marginTop:0}}>{t.nav_profile}</h2>
-      <Field label={t.name} value={p.full_name} onChange={(v)=>setP({...p,full_name:v})}/>
-      <Field label={t.email} value={p.email} onChange={(v)=>setP({...p,email:v})}/>
-      <Field label={t.username} value={p.username} onChange={(v)=>setP({...p,username:v})}/>
-      <button onClick={save} style={btn(C.brand)}>{ok?t.saved:t.save}</button>
+    <div style={{maxWidth:480}}>
+      <div style={card}>
+        <h2 style={{fontFamily:"Sora", marginTop:0}}>{t.nav_profile}</h2>
+        <Field label={t.name} value={p.full_name} onChange={(v)=>setP({...p,full_name:v})}/>
+        <Field label={t.email} value={p.email} onChange={(v)=>setP({...p,email:v})}/>
+        <Field label={t.username} value={p.username} onChange={(v)=>setP({...p,username:v})}/>
+        <button onClick={save} style={btn(C.brand)}>{ok?t.saved:t.save}</button>
+      </div>
+      <ChangePassword t={t}/>
     </div>
   );
 }
@@ -666,20 +725,186 @@ function Results({t, lang, athletes, teams, sessions, acwr, reload}) {
   );
 }
 
+/* ---------------- Bienestar (Preparador) ---------------- */
+function WellnessCoach({t, lang, athletes, teams, wellness}) {
+  const [teamId,setTeamId] = useState(teams[0]?teams[0].id:"");
+  const team = teams.find(x=>x.id===teamId);
+  const latest = useMemo(()=>latestWellnessByAthlete(wellness), [wellness]);
+  const ids = team ? team.memberIds : [];
+
+  return (
+    <div>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, flexWrap:"wrap", gap:10}}>
+        <h2 style={{fontFamily:"Sora", margin:0}}>{t.wellness_title}</h2>
+        {teams.length>0 && (
+          <select value={teamId} onChange={(e)=>setTeamId(e.target.value)}
+            style={{padding:"10px 14px", borderRadius:12, background:C.panel2, border:`1px solid ${C.line}`, color:C.text, fontSize:14}}>
+            {teams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+          </select>
+        )}
+      </div>
+      {!team && <div style={{color:C.sub}}>{t.no_teams}</div>}
+      <div style={{display:"grid", gap:12}}>
+        {ids.map(aid=>{
+          const a = athletes.find(x=>x.id===aid) || {full_name:"—"};
+          const w = latest[aid];
+          const col = wellnessColor(w?w.wellness_score:null);
+          return (
+            <div key={aid} style={{...card, borderLeft:`6px solid ${col}`}}>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                <div style={{fontFamily:"Sora", fontWeight:800, fontSize:18}}>{a.full_name}</div>
+                {w ? (
+                  <div style={{textAlign:"center"}}>
+                    <div style={{background:col, color:"#fff", fontWeight:800, fontSize:20, padding:"6px 14px", borderRadius:12}}>{w.wellness_score}</div>
+                    <div style={{color:C.sub, fontSize:11, marginTop:3}}>{t.w_score} · {fmtDate(w.entry_date, lang)}</div>
+                  </div>
+                ) : <span style={{color:C.gray, fontSize:13}}>{t.no_wellness}</span>}
+              </div>
+              {w && (
+                <div style={{display:"flex", gap:8, flexWrap:"wrap", marginTop:12}}>
+                  {[[t.w_sleep_q,w.sleep_quality],[t.w_sleep_h,w.sleep_hours],[t.w_fatigue,w.fatigue],[t.w_soreness,w.soreness],[t.w_stress,w.stress],[t.w_mood,w.mood]].map(([lab,v])=>(
+                    <div key={lab} style={{flex:"1 1 80px", background:C.panel2, borderRadius:10, padding:"7px 9px"}}>
+                      <div style={{color:C.sub, fontSize:11}}>{lab}</div>
+                      <div style={{fontWeight:700, fontSize:15, marginTop:2}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Lesiones (Preparador) ---------------- */
+function InjuriesCoach({t, lang, profile, athletes, injuries, reload}) {
+  const [creating,setCreating] = useState(false);
+  const todayStr = new Date().toISOString().slice(0,10);
+  const empty = { athlete_id:(athletes[0]?athletes[0].id:""), body_area:"", injury_type:"", mechanism:"", onset_date:todayStr, severity:3, status:"active", days_lost:0, expected_return:"", notes:"" };
+  const [f,setF] = useState(empty);
+  const [busy,setBusy] = useState(false);
+
+  async function create(){
+    if(!f.athlete_id || !f.body_area.trim()) return;
+    setBusy(true);
+    await db.from("injuries").insert({
+      athlete_id:f.athlete_id, body_area:f.body_area, injury_type:f.injury_type||null, mechanism:f.mechanism||null,
+      onset_date:f.onset_date, severity:parseInt(f.severity)||null, status:f.status,
+      days_lost:parseInt(f.days_lost)||0, expected_return:f.expected_return||null, notes:f.notes||null, created_by:profile.id
+    });
+    setBusy(false); setCreating(false); setF(empty); reload();
+  }
+  async function setStatus(id, status){ await db.from("injuries").update({status}).eq("id", id); reload(); }
+
+  const inputStyle = {width:"100%", marginTop:6, padding:"11px 13px", borderRadius:11, background:C.panel2, border:`1px solid ${C.line}`, color:C.text, fontSize:15};
+
+  return (
+    <div>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}}>
+        <h2 style={{fontFamily:"Sora", margin:0}}>{t.injuries_title}</h2>
+        {!creating && athletes.length>0 && <button onClick={()=>setCreating(true)} style={btn(C.brand)}>{t.new_injury}</button>}
+      </div>
+
+      {creating && (
+        <div style={{...card, marginBottom:16}}>
+          <label style={{display:"block", marginBottom:14}}>
+            <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.select_athlete}</span>
+            <select value={f.athlete_id} onChange={(e)=>setF({...f,athlete_id:e.target.value})} style={inputStyle}>
+              {athletes.map(a=><option key={a.id} value={a.id}>{a.full_name}</option>)}
+            </select>
+          </label>
+          <Field label={t.i_body} value={f.body_area} onChange={(v)=>setF({...f,body_area:v})}/>
+          <Field label={t.i_type} value={f.injury_type} onChange={(v)=>setF({...f,injury_type:v})}/>
+          <Field label={t.i_mechanism} value={f.mechanism} onChange={(v)=>setF({...f,mechanism:v})}/>
+          <Field label={t.i_onset} type="date" value={f.onset_date} onChange={(v)=>setF({...f,onset_date:v})}/>
+          <Field label={t.i_severity} type="number" value={f.severity} onChange={(v)=>setF({...f,severity:v})}/>
+          <label style={{display:"block", marginBottom:14}}>
+            <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.i_status}</span>
+            <select value={f.status} onChange={(e)=>setF({...f,status:e.target.value})} style={inputStyle}>
+              {INJURY_STATUS.map(s=><option key={s} value={s}>{injuryStatusLabel(t,s)}</option>)}
+            </select>
+          </label>
+          <Field label={t.i_days} type="number" value={f.days_lost} onChange={(v)=>setF({...f,days_lost:v})}/>
+          <Field label={t.i_return} type="date" value={f.expected_return} onChange={(v)=>setF({...f,expected_return:v})}/>
+          <Field label={t.i_notes} value={f.notes} onChange={(v)=>setF({...f,notes:v})}/>
+          <div style={{display:"flex", gap:10}}>
+            <button disabled={busy} onClick={create} style={btn(C.brand,{opacity:busy?0.7:1})}>{t.create}</button>
+            <button onClick={()=>setCreating(false)} style={btn(C.panel2,{color:C.sub})}>{t.cancel}</button>
+          </div>
+        </div>
+      )}
+
+      {injuries.length===0 && !creating && <div style={{color:C.sub}}>{t.no_injuries}</div>}
+      <div style={{display:"grid", gap:12}}>
+        {injuries.map(inj=>{ const a=athletes.find(x=>x.id===inj.athlete_id); const col=injuryColor(inj.status);
+          return (
+            <div key={inj.id} style={{...card, borderLeft:`6px solid ${col}`}}>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10}}>
+                <div>
+                  <div style={{fontFamily:"Sora", fontWeight:800, fontSize:17}}>{a?a.full_name:"—"}</div>
+                  <div style={{fontWeight:600, marginTop:2}}>{inj.body_area}{inj.injury_type?` · ${inj.injury_type}`:""}</div>
+                  <div style={{color:C.sub, fontSize:12.5, marginTop:4}}>
+                    {fmtDate(inj.onset_date, lang)}{inj.mechanism?` · ${inj.mechanism}`:""}
+                    {inj.days_lost?` · ${inj.days_lost} ${lang==="es"?"días baja":"days"}`:""}
+                  </div>
+                  {inj.notes && <div style={{color:C.sub, fontSize:12.5, marginTop:6}}>{inj.notes}</div>}
+                </div>
+                <select value={inj.status} onChange={(e)=>setStatus(inj.id, e.target.value)}
+                  style={{padding:"7px 10px", borderRadius:10, background:col, color:"#fff", border:"none", fontSize:12.5, fontWeight:700}}>
+                  {INJURY_STATUS.map(s=><option key={s} value={s} style={{background:C.panel, color:C.text}}>{injuryStatusLabel(t,s)}</option>)}
+                </select>
+              </div>
+            </div>
+          );})}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Cambiar contraseña ---------------- */
+function ChangePassword({t}) {
+  const [p1,setP1] = useState(""); const [p2,setP2] = useState("");
+  const [msg,setMsg] = useState(""); const [ok,setOk] = useState(false); const [busy,setBusy] = useState(false);
+  async function change(){
+    setMsg("");
+    if(p1.length<6){ setOk(false); setMsg(t.pwd_short); return; }
+    if(p1!==p2){ setOk(false); setMsg(t.pwd_mismatch); return; }
+    setBusy(true);
+    const { error } = await db.auth.updateUser({ password:p1 });
+    setBusy(false);
+    if(error){ setOk(false); setMsg(error.message); }
+    else { setOk(true); setMsg(t.pwd_changed); setP1(""); setP2(""); }
+  }
+  return (
+    <div style={{...card, maxWidth:480, marginTop:16}}>
+      <h3 style={{fontFamily:"Sora", marginTop:0}}>{t.change_password}</h3>
+      <Field label={t.new_password} type="password" value={p1} onChange={setP1}/>
+      <Field label={t.repeat_password} type="password" value={p2} onChange={setP2}/>
+      {msg && <div style={{color:ok?C.green:C.red, fontSize:13, marginBottom:12}}>{msg}</div>}
+      <button disabled={busy} onClick={change} style={btn(C.brand,{opacity:busy?0.7:1})}>{t.change_password}</button>
+    </div>
+  );
+}
+
 /* ---------------- Atleta ---------------- */
 function AthleteApp({t, lang, LangToggle, profile}) {
+  const [tab, setTab] = useState("training");
   const [sessions, setSessions] = useState([]);
   const [acwr, setAcwr] = useState(null);
+  const [injuries, setInjuries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(null);
 
   async function loadMine(){
     setLoading(true);
-    const [s, w] = await Promise.all([
+    const [s, w, inj] = await Promise.all([
       db.from("session_athletes")
         .select("id,minutes,rpe,submitted_at,sessions(id,session_date,team_id,teams(name))")
         .eq("athlete_id", profile.id),
       db.from("v_athlete_acwr").select("*").eq("athlete_id", profile.id),
+      db.from("injuries").select("*").eq("athlete_id", profile.id).order("onset_date",{ascending:false}),
     ]);
     const list = (s.data||[]).map(r=>({
       id:r.id, minutes:r.minutes, rpe:r.rpe, submitted_at:r.submitted_at,
@@ -688,6 +913,7 @@ function AthleteApp({t, lang, LangToggle, profile}) {
     })).filter(r=>r.session_date).sort((a,b)=> a.session_date < b.session_date ? 1 : -1);
     setSessions(list);
     setAcwr((w.data && w.data[0]) ? w.data[0] : null);
+    setInjuries(inj.data||[]);
     setLoading(false);
   }
   useEffect(()=>{ loadMine(); }, []);
@@ -705,43 +931,127 @@ function AthleteApp({t, lang, LangToggle, profile}) {
   const hasData = !!acwr && v>0;
   const col = acwrColor(v, hasData);
   const visible = !!profile.acwr_visible;
+  const atabs = [["training",t.nav_training],["wellness",t.nav_wellness],["profile",t.nav_profile]];
 
   return (
     <div>
-      <TopBar t={t} LangToggle={LangToggle}/>
+      <TopBar t={t} LangToggle={LangToggle} tabs={atabs} tab={tab} setTab={setTab}/>
       <div style={{padding:22}}>
-        <div style={{marginBottom:18, color:C.sub}}>{profile.full_name}</div>
 
-        {visible && (
-          <div style={{...card, marginBottom:20, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-            <div>
-              <div style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.your_acwr}</div>
-              <div style={{fontSize:13, color:col, fontWeight:700, marginTop:4}}>{t.bands[bandIndex(v,hasData)]}</div>
-            </div>
-            <span style={{background:col, color:"#fff", fontWeight:800, fontSize:22, padding:"10px 18px", borderRadius:14}}>
-              {hasData ? v.toFixed(2).replace(".", lang==="es"?",":".") : "—"}
-            </span>
-          </div>
-        )}
-
-        <h2 style={{fontFamily:"Sora"}}>{t.your_sessions}</h2>
-        {loading ? <div style={{color:C.sub}}>{t.loading}</div> : (
-          <div style={{display:"grid", gap:12}}>
-            {sessions.length===0 && <div style={{color:C.sub}}>{t.no_pending}</div>}
-            {sessions.map(s=>(
-              <div key={s.id} style={{...card, display:"flex", justifyContent:"space-between", alignItems:"center", gap:12}}>
+        {tab==="training" && (
+          <React.Fragment>
+            {visible && (
+              <div style={{...card, marginBottom:20, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
                 <div>
-                  <div style={{fontWeight:700}}>{s.team_name}</div>
-                  <div style={{color:C.sub, fontSize:13}}>{fmtDate(s.session_date, lang)} · {s.minutes} {t.minutes_label}</div>
+                  <div style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.your_acwr}</div>
+                  <div style={{fontSize:13, color:col, fontWeight:700, marginTop:4}}>{t.bands[bandIndex(v,hasData)]}</div>
                 </div>
-                {s.submitted_at
-                  ? <span style={{color:C.green, fontWeight:700, fontSize:14}}>✓ {t.done} (RPE {s.rpe})</span>
-                  : <button onClick={()=>setActive(s.id)} style={btn(C.brand)}>{t.complete_survey}</button>}
+                <span style={{background:col, color:"#fff", fontWeight:800, fontSize:22, padding:"10px 18px", borderRadius:14}}>
+                  {hasData ? v.toFixed(2).replace(".", lang==="es"?",":".") : "—"}
+                </span>
               </div>
-            ))}
-          </div>
+            )}
+            <h2 style={{fontFamily:"Sora"}}>{t.your_sessions}</h2>
+            {loading ? <div style={{color:C.sub}}>{t.loading}</div> : (
+              <div style={{display:"grid", gap:12}}>
+                {sessions.length===0 && <div style={{color:C.sub}}>{t.no_pending}</div>}
+                {sessions.map(s=>(
+                  <div key={s.id} style={{...card, display:"flex", justifyContent:"space-between", alignItems:"center", gap:12}}>
+                    <div>
+                      <div style={{fontWeight:700}}>{s.team_name}</div>
+                      <div style={{color:C.sub, fontSize:13}}>{fmtDate(s.session_date, lang)} · {s.minutes} {t.minutes_label}</div>
+                    </div>
+                    {s.submitted_at
+                      ? <span style={{color:C.green, fontWeight:700, fontSize:14}}>✓ {t.done} (RPE {s.rpe})</span>
+                      : <button onClick={()=>setActive(s.id)} style={btn(C.brand)}>{t.complete_survey}</button>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </React.Fragment>
         )}
+
+        {tab==="wellness" && <WellnessForm t={t} lang={lang} profile={profile}/>}
+        {tab==="profile"  && <AthleteProfile t={t} lang={lang} profile={profile} injuries={injuries}/>}
       </div>
+    </div>
+  );
+}
+
+function WellnessForm({t, lang, profile}) {
+  const todayStr = new Date().toISOString().slice(0,10);
+  const [w,setW] = useState({sleep_quality:3, sleep_hours:7.5, fatigue:3, soreness:3, stress:3, mood:3, notes:""});
+  const [ok,setOk] = useState(false);
+  const [busy,setBusy] = useState(false);
+
+  useEffect(()=>{
+    db.from("wellness_entries").select("*").eq("athlete_id", profile.id).eq("entry_date", todayStr).maybeSingle()
+      .then(({data})=>{ if(data) setW({sleep_quality:data.sleep_quality, sleep_hours:data.sleep_hours, fatigue:data.fatigue, soreness:data.soreness, stress:data.stress, mood:data.mood, notes:data.notes||""}); });
+  }, []);
+
+  async function save(){
+    setBusy(true);
+    await db.from("wellness_entries").upsert({
+      athlete_id:profile.id, entry_date:todayStr,
+      sleep_quality:w.sleep_quality, sleep_hours:w.sleep_hours, fatigue:w.fatigue,
+      soreness:w.soreness, stress:w.stress, mood:w.mood, notes:w.notes||null
+    }, { onConflict:"athlete_id,entry_date" });
+    setBusy(false); setOk(true); setTimeout(()=>setOk(false), 1800);
+  }
+
+  return (
+    <div style={{maxWidth:480}}>
+      <h2 style={{fontFamily:"Sora"}}>{t.wellness_today}</h2>
+      <div style={card}>
+        <Scale label={t.w_sleep_q} hint={t.w_hint_good} value={w.sleep_quality} onChange={(n)=>setW({...w,sleep_quality:n})}/>
+        <label style={{display:"block", marginBottom:14}}>
+          <span style={{color:C.text, fontSize:14, fontWeight:600}}>{t.w_sleep_h}</span>
+          <input type="number" step="0.5" min="0" max="14" value={w.sleep_hours}
+            onChange={(e)=>setW({...w, sleep_hours:parseFloat(e.target.value)})}
+            style={{width:"100%", marginTop:6, padding:"11px 13px", borderRadius:11, background:C.panel2, border:`1px solid ${C.line}`, color:C.text, fontSize:15}}/>
+        </label>
+        <Scale label={t.w_fatigue} hint={t.w_hint_bad} value={w.fatigue} onChange={(n)=>setW({...w,fatigue:n})}/>
+        <Scale label={t.w_soreness} hint={t.w_hint_bad} value={w.soreness} onChange={(n)=>setW({...w,soreness:n})}/>
+        <Scale label={t.w_stress} hint={t.w_hint_bad} value={w.stress} onChange={(n)=>setW({...w,stress:n})}/>
+        <Scale label={t.w_mood} hint={t.w_hint_good} value={w.mood} onChange={(n)=>setW({...w,mood:n})}/>
+        <label style={{display:"block", marginBottom:16}}>
+          <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.w_notes}</span>
+          <textarea value={w.notes} onChange={(e)=>setW({...w,notes:e.target.value})} rows={2}
+            style={{width:"100%", marginTop:6, padding:"11px 13px", borderRadius:11, background:C.panel2, border:`1px solid ${C.line}`, color:C.text, fontSize:15, fontFamily:"inherit", resize:"vertical"}}/>
+        </label>
+        <button disabled={busy} onClick={save} style={btn(C.brand,{width:"100%", opacity:busy?0.7:1})}>{ok?t.wellness_saved:t.save}</button>
+      </div>
+    </div>
+  );
+}
+
+function AthleteProfile({t, lang, profile, injuries}) {
+  return (
+    <div style={{maxWidth:480}}>
+      <h2 style={{fontFamily:"Sora"}}>{t.nav_profile}</h2>
+      <div style={card}>
+        <div style={{fontWeight:700, fontSize:17}}>{profile.full_name}</div>
+        <div style={{color:C.sub, fontSize:13, marginTop:4}}>{profile.username||"—"} · {profile.email||"—"}</div>
+      </div>
+
+      <h3 style={{fontFamily:"Sora", marginTop:24}}>{t.my_injuries}</h3>
+      {(!injuries || injuries.length===0) ? <div style={{color:C.sub}}>{t.no_injuries}</div> : (
+        <div style={{display:"grid", gap:10}}>
+          {injuries.map(inj=>{ const col=injuryColor(inj.status);
+            return (
+              <div key={inj.id} style={{...card, borderLeft:`6px solid ${col}`}}>
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:10}}>
+                  <div style={{fontWeight:700}}>{inj.body_area}{inj.injury_type?` · ${inj.injury_type}`:""}</div>
+                  <span style={{background:col, color:"#fff", fontSize:12, fontWeight:700, padding:"5px 10px", borderRadius:9}}>{injuryStatusLabel(t,inj.status)}</span>
+                </div>
+                <div style={{color:C.sub, fontSize:12.5, marginTop:4}}>{fmtDate(inj.onset_date, lang)}{inj.expected_return?` → ${fmtDate(inj.expected_return, lang)}`:""}</div>
+                {inj.notes && <div style={{color:C.sub, fontSize:12.5, marginTop:6}}>{inj.notes}</div>}
+              </div>
+            );})}
+        </div>
+      )}
+
+      <ChangePassword t={t}/>
     </div>
   );
 }
