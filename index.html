@@ -5,7 +5,6 @@
 <title>Cargia</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0c1322" />
-<!-- iOS: app a pantalla completa + icono al añadir a pantalla de inicio -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,12 +25,26 @@
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useMemo } = React;
+const { useState, useEffect, useMemo } = React;
+
+/* ===================================================================
+   CONFIGURA AQUÍ TU PROYECTO SUPABASE
+   Pega tu Project URL y tu anon key (Settings → API en Supabase).
+   La anon key es pública y segura: la protección la da el RLS.
+=================================================================== */
+const SUPABASE_URL      = "https://beuajnzeduzmkusuyccm.supabase.co";   // <-- pega tu Project URL
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldWFqbnplZHV6bWt1c3V5Y2NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0NDYsImV4cCI6MjA5NjU5NTQ0Nn0.bFZUeVO284An23BtuV9so61_Gzy_5iGpik1BTRM9Voo";                  // <-- pega tu anon key
+/* =================================================================== */
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const DEMO = { email: "coach@demo.es", password: "Demo1234!" };
 
 const C = {
   bg:"#0c1322", panel:"#141d31", panel2:"#1b2740", line:"#27324d", text:"#eef2fb",
@@ -42,9 +55,10 @@ const C = {
 /* ---------------- i18n ---------------- */
 const I18N = {
   es: {
-    tagline:"Control de carga de entrenamiento", login_as:"Elige cómo quieres entrar",
-    coach:"Preparador físico", athlete:"Deportista", demo_note:"Prototipo de demostración · datos de ejemplo",
-    logout:"Salir",
+    tagline:"Control de carga de entrenamiento",
+    email_label:"Correo", password_label:"Contraseña", enter:"Entrar", signing_in:"Entrando…",
+    demo_mode:"Entrar en modo demo", login_error:"Correo o contraseña incorrectos",
+    loading:"Cargando…", logout:"Salir",
     nav_profile:"Perfil", nav_athletes:"Deportistas", nav_teams:"Equipos", nav_sessions:"Sesiones", nav_results:"Carga",
     name:"Nombre", email:"Correo", username:"Usuario", role:"Rol", save:"Guardar", saved:"¡Guardado!",
     teams_title:"Equipos", new_team:"Nuevo equipo", team_name:"Nombre del equipo", members:"Deportistas",
@@ -52,25 +66,28 @@ const I18N = {
     athletes_title:"Deportistas", new_athlete:"Nuevo deportista",
     temp_password:"Contraseña temporal",
     credentials_note:"Comparte estas credenciales con el deportista. Podrá cambiarlas al entrar.",
-    copy:"Copiar", copied:"¡Copiado!", show_acwr_athlete:"ACWR visible para el deportista",
+    copy:"Copiar", copied:"¡Copiado!", creating:"Creando…", show_acwr_athlete:"ACWR visible para el deportista",
+    no_athletes:"Aún no has creado deportistas.",
     sessions_title:"Sesiones de entrenamiento", new_session:"Nueva sesión", select_team:"Equipo", date:"Fecha",
     minutes_each:"Minutos por deportista (30–250)", completed:"completado", pending:"Pendiente", minutes_label:"min",
+    no_sessions:"No hay sesiones todavía.", no_teams:"Crea primero un equipo con deportistas.",
     results_title:"Carga", athlete_col:"Deportista", load_col:"Carga (últ.)",
-    acute:"Aguda (7 d)", chronic:"Crónica (28 d)", acwr:"ACWR", no_data:"Sin datos", visible_col:"Visible al deportista",
+    acute:"Aguda (7 d)", chronic:"Crónica (28 d)", acwr:"ACWR", no_data:"Sin datos",
     legend:"Escala ACWR",
     leg_blue:"< 0,8 · baja carga / desentreno", leg_green:"0,8–1,3 · zona óptima",
     leg_orange:"1,3–1,6 · precaución", leg_red:"> 1,6 · riesgo alto",
-    who:"¿Quién eres? (demo)", your_sessions:"Tus sesiones", complete_survey:"Completar", done:"Entregado",
-    your_acwr:"Tu ACWR", acwr_hidden:"Tu preparador aún no ha activado tu ACWR.",
-    rpe_question:"¿Cuánto de duro ha sido el entrenamiento?", session_of:"Sesión del",
+    your_sessions:"Tus sesiones", complete_survey:"Completar", done:"Entregado",
+    your_acwr:"Tu ACWR", no_pending:"No tienes sesiones pendientes.",
+    rpe_question:"¿Cuánto de duro ha sido el entrenamiento?",
     bands:["Baja carga","Zona óptima","Precaución","Riesgo alto","Sin datos"],
     rpe:["Nada (reposo)","Muy, muy suave","Suave","Moderado","Algo duro","Duro",
          "Entre duro y muy duro","Muy duro","Muy, muy duro","Casi máximo","Máximo"],
   },
   en: {
-    tagline:"Training load monitoring", login_as:"Choose how you want to sign in",
-    coach:"Strength coach", athlete:"Athlete", demo_note:"Demo prototype · sample data",
-    logout:"Sign out",
+    tagline:"Training load monitoring",
+    email_label:"Email", password_label:"Password", enter:"Sign in", signing_in:"Signing in…",
+    demo_mode:"Enter demo mode", login_error:"Wrong email or password",
+    loading:"Loading…", logout:"Sign out",
     nav_profile:"Profile", nav_athletes:"Athletes", nav_teams:"Teams", nav_sessions:"Sessions", nav_results:"Load",
     name:"Name", email:"Email", username:"Username", role:"Role", save:"Save", saved:"Saved!",
     teams_title:"Teams", new_team:"New team", team_name:"Team name", members:"Athletes",
@@ -78,75 +95,30 @@ const I18N = {
     athletes_title:"Athletes", new_athlete:"New athlete",
     temp_password:"Temporary password",
     credentials_note:"Share these credentials with the athlete. They can change them on first login.",
-    copy:"Copy", copied:"Copied!", show_acwr_athlete:"ACWR visible to athlete",
+    copy:"Copy", copied:"Copied!", creating:"Creating…", show_acwr_athlete:"ACWR visible to athlete",
+    no_athletes:"You haven't created any athletes yet.",
     sessions_title:"Training sessions", new_session:"New session", select_team:"Team", date:"Date",
     minutes_each:"Minutes per athlete (30–250)", completed:"completed", pending:"Pending", minutes_label:"min",
+    no_sessions:"No sessions yet.", no_teams:"Create a team with athletes first.",
     results_title:"Load", athlete_col:"Athlete", load_col:"Load (last)",
-    acute:"Acute (7 d)", chronic:"Chronic (28 d)", acwr:"ACWR", no_data:"No data", visible_col:"Visible to athlete",
+    acute:"Acute (7 d)", chronic:"Chronic (28 d)", acwr:"ACWR", no_data:"No data",
     legend:"ACWR scale",
     leg_blue:"< 0.8 · undertraining", leg_green:"0.8–1.3 · sweet spot",
     leg_orange:"1.3–1.6 · caution", leg_red:"> 1.6 · high risk",
-    who:"Who are you? (demo)", your_sessions:"Your sessions", complete_survey:"Complete", done:"Submitted",
-    your_acwr:"Your ACWR", acwr_hidden:"Your coach hasn't enabled your ACWR yet.",
-    rpe_question:"How hard was the session?", session_of:"Session of",
+    your_sessions:"Your sessions", complete_survey:"Complete", done:"Submitted",
+    your_acwr:"Your ACWR", no_pending:"You have no pending sessions.",
+    rpe_question:"How hard was the session?",
     bands:["Undertraining","Sweet spot","Caution","High risk","No data"],
     rpe:["Rest (nothing at all)","Very, very easy","Easy","Moderate","Somewhat hard","Hard",
          "Hard to very hard","Very hard","Very, very hard","Near maximal","Maximal"],
   },
 };
 
-/* ---------------- Datos de ejemplo ---------------- */
-const today = new Date(); today.setHours(0,0,0,0);
-const dateFromOffset = (n) => { const d = new Date(today); d.setDate(d.getDate()-n); return d; };
-
-const ATHLETES_SEED = [
-  { id:"a1", name:"Marcos Pérez", email:"marcos@demo.es", username:"marcos" },
-  { id:"a2", name:"Lucía Romero", email:"lucia@demo.es", username:"lucia" },
-  { id:"a3", name:"Diego Soler", email:"diego@demo.es", username:"diego" },
-  { id:"a4", name:"Sara Núñez", email:"sara@demo.es", username:"sara" },
-  { id:"a5", name:"Javier Marín", email:"javier@demo.es", username:"javier" },
-];
-const TEAMS_SEED = [
-  { id:"t1", name:"Sub-23 Fútbol", memberIds:["a1","a2","a3"] },
-  { id:"t2", name:"Atletismo Élite", memberIds:["a4","a5"] },
-];
-const RPE_PLAN = { a1:[6,6,6,6], a2:[8,2,2,2], a3:[2,7,7,7], a4:[8,5,5,5], a5:[null,5,5,5] };
-const WEEK_OFFSETS = [[2,4,6],[9,11,13],[16,18,20],[23,25,27]];
-
-function buildSeedSessions() {
-  const out = []; let sid = 1;
-  for (const team of TEAMS_SEED) {
-    for (let w=0; w<4; w++) {
-      for (const off of WEEK_OFFSETS[w]) {
-        const entries = team.memberIds.map((aid) => {
-          let rpe = RPE_PLAN[aid][w];
-          if (aid==="a2" && off===2) rpe = null; // demo de "pendiente"
-          return { athleteId:aid, minutes:90, rpe, submitted: rpe!==null };
-        });
-        out.push({ id:"s"+sid++, teamId:team.id, dateOffset:off, entries });
-      }
-    }
-  }
-  return out;
-}
-
-/* ---------------- ACWR ---------------- */
-function loadsForAthlete(sessions, aid) {
-  const arr = [];
-  for (const s of sessions) {
-    const e = s.entries.find((x)=>x.athleteId===aid);
-    if (e && e.rpe!==null && e.rpe!==undefined) arr.push({ offset:s.dateOffset, load:e.rpe*e.minutes });
-  }
-  return arr;
-}
-function acwrFor(sessions, aid) {
-  const loads = loadsForAthlete(sessions, aid);
-  const acute  = loads.filter(l=>l.offset<=7).reduce((a,b)=>a+b.load,0);
-  const sum28  = loads.filter(l=>l.offset<=28).reduce((a,b)=>a+b.load,0);
-  const chronic = sum28/4;
-  const acwr = chronic>0 ? acute/chronic : 0;
-  return { acute, chronic, acwr, hasData: loads.length>0 };
-}
+/* ---------------- Helpers ---------------- */
+const fmtDate = (ds, lang) => {
+  const d = new Date(ds + "T00:00:00");
+  return d.toLocaleDateString(lang==="es"?"es-ES":"en-GB", { day:"2-digit", month:"short" });
+};
 function acwrColor(v, hasData) {
   if (!hasData || v===0) return C.gray;
   if (v<0.8) return C.blue;
@@ -155,10 +127,8 @@ function acwrColor(v, hasData) {
   return C.red;
 }
 function bandIndex(v, hasData){ if(!hasData||v===0) return 4; if(v<0.8) return 0; if(v<=1.3) return 1; if(v<=1.6) return 2; return 3; }
-const fmtDate = (d, locale) => d.toLocaleDateString(locale==="es"?"es-ES":"en-GB",{day:"2-digit",month:"short"});
-const genPwd = () => { const s="ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let p="Cg"; for(let i=0;i<6;i++) p+=s[Math.floor(Math.random()*s.length)]; return p; };
 
-/* ---------------- UI ---------------- */
+/* ---------------- UI base ---------------- */
 const Mark = ({size=30}) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
     <rect width="48" height="48" rx="11" fill={C.brand}/>
@@ -169,12 +139,11 @@ const Mark = ({size=30}) => (
 const Brand = ({fontSize=18}) => (
   <span style={{fontFamily:"Sora", fontWeight:800, fontSize}}>Carg<span style={{color:C.accent}}>IA</span></span>
 );
-
 function Field({label, value, onChange, type="text"}) {
   return (
     <label style={{display:"block", marginBottom:14}}>
       <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{label}</span>
-      <input type={type} value={value} onChange={(e)=>onChange(e.target.value)}
+      <input type={type} value={value||""} onChange={(e)=>onChange(e.target.value)}
         style={{width:"100%", marginTop:6, padding:"12px 14px", borderRadius:12, background:C.panel2,
           border:`1px solid ${C.line}`, color:C.text, fontSize:15}} />
     </label>
@@ -183,28 +152,45 @@ function Field({label, value, onChange, type="text"}) {
 const btn = (bg, extra={}) => ({ background:bg, color:"#fff", border:"none", borderRadius:14,
   padding:"13px 20px", fontSize:15, fontWeight:700, cursor:"pointer", ...extra });
 const card = { background:C.panel, border:`1px solid ${C.line}`, borderRadius:18, padding:18 };
-
 function Toggle({on, onClick}) {
   return (
     <button onClick={onClick} style={{ width:46, height:26, borderRadius:999, border:"none", cursor:"pointer",
-      background:on?C.green:C.line, position:"relative", transition:"background .15s" }}>
-      <span style={{ position:"absolute", top:3, left:on?23:3, width:20, height:20, borderRadius:"50%",
-        background:"#fff", transition:"left .15s" }} />
+      background:on?C.green:C.line, position:"relative" }}>
+      <span style={{ position:"absolute", top:3, left:on?23:3, width:20, height:20, borderRadius:"50%", background:"#fff" }} />
     </button>
+  );
+}
+function Splash({t}) {
+  return (
+    <div style={{minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, color:C.sub}}>
+      <Mark size={56}/>
+      <div>{t ? t.loading : "Cargando…"}</div>
+    </div>
   );
 }
 
 /* ---------------- App ---------------- */
 function App() {
   const [lang, setLang] = useState("es");
-  const [screen, setScreen] = useState("login");
-  const [athletes, setAthletes] = useState(ATHLETES_SEED.map(a=>({...a})));
-  const [teams, setTeams] = useState(TEAMS_SEED.map(t=>({...t, memberIds:[...t.memberIds]})));
-  const [sessions, setSessions] = useState(buildSeedSessions);
-  const [acwrVisible, setAcwrVisible] = useState({ a2:true }); // demo: Lucía ve su ACWR
-  const [currentAthlete, setCurrentAthlete] = useState("a2");
-  const t = I18N[lang];
+  const [session, setSession] = useState(undefined); // undefined = comprobando
+  const [profile, setProfile] = useState(null);
 
+  useEffect(() => {
+    db.auth.getSession().then(({data}) => setSession(data.session));
+    const { data: sub } = db.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    let cancel = false;
+    if (session && session.user) {
+      db.from("profiles").select("*").eq("id", session.user.id).single()
+        .then(({data}) => { if(!cancel){ setProfile(data); if(data && data.locale) setLang(data.locale); } });
+    } else { setProfile(null); }
+    return () => { cancel = true; };
+  }, [session]);
+
+  const t = I18N[lang];
   const LangToggle = () => (
     <div style={{display:"inline-flex", background:C.panel2, borderRadius:10, padding:3}}>
       {["es","en"].map(l=>(
@@ -218,56 +204,70 @@ function App() {
 
   const shell = { background:C.bg, color:C.text, minHeight:"100vh", maxWidth:1000, margin:"0 auto" };
 
-  if (screen==="login") return <div style={shell}><Login t={t} LangToggle={LangToggle} onPick={setScreen} /></div>;
-  if (screen==="coach") return <div style={shell}>
-    <CoachApp t={t} lang={lang} LangToggle={LangToggle}
-      athletes={athletes} setAthletes={setAthletes} teams={teams} setTeams={setTeams}
-      sessions={sessions} setSessions={setSessions} acwrVisible={acwrVisible} setAcwrVisible={setAcwrVisible}
-      onLogout={()=>setScreen("login")} />
-  </div>;
-  return <div style={shell}>
-    <AthleteApp t={t} lang={lang} LangToggle={LangToggle}
-      athletes={athletes} teams={teams} sessions={sessions} setSessions={setSessions}
-      acwrVisible={acwrVisible} currentAthlete={currentAthlete} setCurrentAthlete={setCurrentAthlete}
-      onLogout={()=>setScreen("login")} />
-  </div>;
+  let content;
+  if (session === undefined) content = <Splash t={t}/>;
+  else if (!session) content = <Login t={t} LangToggle={LangToggle} />;
+  else if (!profile) content = <Splash t={t}/>;
+  else if (profile.role === "coach")
+    content = <CoachApp t={t} lang={lang} LangToggle={LangToggle} profile={profile} />;
+  else
+    content = <AthleteApp t={t} lang={lang} LangToggle={LangToggle} profile={profile} />;
+
+  return <div style={shell}>{content}</div>;
 }
 
 /* ---------------- Login ---------------- */
-function Login({t, LangToggle, onPick}) {
+function Login({t, LangToggle}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function signIn(e, p) {
+    setBusy(true); setErr("");
+    const { error } = await db.auth.signInWithPassword({ email: e, password: p });
+    if (error) { setErr(t.login_error); setBusy(false); }
+  }
+
   return (
     <div style={{padding:"48px 28px", textAlign:"center"}}>
-      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:60}}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:48}}>
         <div style={{display:"flex", alignItems:"center", gap:10}}><Mark/><Brand fontSize={22}/></div>
         <LangToggle/>
       </div>
       <div style={{display:"flex", justifyContent:"center", marginBottom:14}}><Mark size={64}/></div>
       <h1 style={{margin:"0 0 8px"}}><Brand fontSize={34}/></h1>
-      <p style={{color:C.sub, marginBottom:44}}>{t.tagline}</p>
-      <p style={{color:C.sub, fontWeight:600, marginBottom:18}}>{t.login_as}</p>
-      <div style={{display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", maxWidth:520, margin:"0 auto"}}>
-        {[["coach",t.coach,C.brand],["athlete",t.athlete,C.panel2]].map(([r,label,bg])=>(
-          <button key={r} onClick={()=>onPick(r)} style={{...card, flex:"1 1 200px", cursor:"pointer",
-            background:bg, borderColor:r==="coach"?C.brand:C.line, padding:"28px 18px", color:"#fff"}}>
-            <div style={{fontSize:32, marginBottom:8}}>{r==="coach"?"🎯":"🏃"}</div>
-            <div style={{fontWeight:700, fontSize:17, color:"#fff"}}>{label}</div>
-          </button>
-        ))}
+      <p style={{color:C.sub, marginBottom:32}}>{t.tagline}</p>
+
+      <div style={{maxWidth:380, margin:"0 auto", textAlign:"left"}}>
+        <Field label={t.email_label} value={email} onChange={setEmail} type="email"/>
+        <Field label={t.password_label} value={password} onChange={setPassword} type="password"/>
+        {err && <div style={{color:C.red, fontSize:13, marginBottom:12}}>{err}</div>}
+        <button disabled={busy} onClick={()=>signIn(email,password)}
+          style={btn(C.brand,{width:"100%", marginBottom:12, opacity:busy?0.7:1})}>
+          {busy ? t.signing_in : t.enter}
+        </button>
+        <button disabled={busy} onClick={()=>signIn(DEMO.email, DEMO.password)}
+          style={btn(C.panel2,{width:"100%", color:C.text, border:`1px solid ${C.line}`})}>
+          {t.demo_mode}
+        </button>
+        <p style={{color:C.gray, fontSize:12, marginTop:18, textAlign:"center"}}>
+          Demo: coach@demo.es · lucia@demo.es — Demo1234!
+        </p>
       </div>
-      <p style={{color:C.gray, fontSize:12, marginTop:40}}>{t.demo_note}</p>
     </div>
   );
 }
 
 /* ---------------- TopBar ---------------- */
-function TopBar({t, LangToggle, onLogout, tabs, tab, setTab}) {
+function TopBar({t, LangToggle, tabs, tab, setTab}) {
   return (
     <div style={{borderBottom:`1px solid ${C.line}`, position:"sticky", top:0, background:C.bg, zIndex:5}}>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 22px"}}>
         <div style={{display:"flex", alignItems:"center", gap:10}}><Mark size={28}/><Brand/></div>
         <div style={{display:"flex", alignItems:"center", gap:12}}>
           <LangToggle/>
-          <button onClick={onLogout} style={btn(C.panel2,{padding:"8px 14px", fontSize:13, color:C.sub})}>{t.logout}</button>
+          <button onClick={()=>db.auth.signOut()} style={btn(C.panel2,{padding:"8px 14px", fontSize:13, color:C.sub})}>{t.logout}</button>
         </div>
       </div>
       {tabs && (
@@ -285,72 +285,109 @@ function TopBar({t, LangToggle, onLogout, tabs, tab, setTab}) {
 }
 
 /* ---------------- Coach ---------------- */
-function CoachApp(props) {
-  const {t} = props;
+function CoachApp({t, lang, LangToggle, profile}) {
   const [tab, setTab] = useState("results");
+  const [athletes, setAthletes] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [acwr, setAcwr] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  async function loadAll() {
+    setLoading(true);
+    const [a, tm, s, w] = await Promise.all([
+      db.from("profiles").select("id,full_name,email,username,acwr_visible").eq("coach_id", profile.id).eq("role","athlete").order("full_name"),
+      db.from("teams").select("id,name,team_members(athlete_id)").eq("coach_id", profile.id).order("name"),
+      db.from("sessions").select("id,team_id,session_date,session_athletes(id,athlete_id,minutes,rpe,submitted_at)").order("session_date",{ascending:false}),
+      db.from("v_athlete_acwr").select("*"),
+    ]);
+    setAthletes(a.data||[]);
+    setTeams((tm.data||[]).map(x=>({ id:x.id, name:x.name, memberIds:(x.team_members||[]).map(m=>m.athlete_id) })));
+    setSessions(s.data||[]);
+    setAcwr(w.data||[]);
+    setLoading(false);
+  }
+  useEffect(() => { loadAll(); }, []);
+
   const tabs = [["sessions",t.nav_sessions],["results",t.nav_results],["teams",t.nav_teams],["athletes",t.nav_athletes],["profile",t.nav_profile]];
+
   return (
     <div>
-      <TopBar t={t} LangToggle={props.LangToggle} onLogout={props.onLogout} tabs={tabs} tab={tab} setTab={setTab}/>
+      <TopBar t={t} LangToggle={LangToggle} tabs={tabs} tab={tab} setTab={setTab}/>
       <div style={{padding:22}}>
-        {tab==="profile"  && <CoachProfile t={t}/>}
-        {tab==="athletes" && <AthletesAdmin {...props}/>}
-        {tab==="teams"    && <Teams {...props}/>}
-        {tab==="sessions" && <Sessions {...props}/>}
-        {tab==="results"  && <Results {...props}/>}
+        {loading ? <div style={{color:C.sub, padding:"30px 0", textAlign:"center"}}>{t.loading}</div> : (
+          <React.Fragment>
+            {tab==="sessions" && <Sessions t={t} lang={lang} profile={profile} athletes={athletes} teams={teams} sessions={sessions} reload={loadAll}/>}
+            {tab==="results"  && <Results t={t} lang={lang} athletes={athletes} teams={teams} sessions={sessions} acwr={acwr} reload={loadAll}/>}
+            {tab==="teams"    && <Teams t={t} athletes={athletes} teams={teams} reload={loadAll}/>}
+            {tab==="athletes" && <AthletesAdmin t={t} athletes={athletes} reload={loadAll}/>}
+            {tab==="profile"  && <CoachProfile t={t} profile={profile}/>}
+          </React.Fragment>
+        )}
       </div>
     </div>
   );
 }
 
-function CoachProfile({t}) {
-  const [p,setP] = useState({name:"Fabián Guidi", email:"coach@demo.es", username:"fabian"});
+function CoachProfile({t, profile}) {
+  const [p,setP] = useState({ full_name:profile.full_name, email:profile.email, username:profile.username });
   const [ok,setOk] = useState(false);
+  async function save(){
+    await db.from("profiles").update({ full_name:p.full_name, username:p.username }).eq("id", profile.id);
+    setOk(true); setTimeout(()=>setOk(false),1500);
+  }
   return (
     <div style={{...card, maxWidth:480}}>
       <h2 style={{fontFamily:"Sora", marginTop:0}}>{t.nav_profile}</h2>
-      <Field label={t.name} value={p.name} onChange={(v)=>setP({...p,name:v})}/>
+      <Field label={t.name} value={p.full_name} onChange={(v)=>setP({...p,full_name:v})}/>
       <Field label={t.email} value={p.email} onChange={(v)=>setP({...p,email:v})}/>
       <Field label={t.username} value={p.username} onChange={(v)=>setP({...p,username:v})}/>
-      <button onClick={()=>{setOk(true); setTimeout(()=>setOk(false),1500);}} style={btn(C.brand)}>{ok?t.saved:t.save}</button>
+      <button onClick={save} style={btn(C.brand)}>{ok?t.saved:t.save}</button>
     </div>
   );
 }
 
-function AthletesAdmin({t, athletes, setAthletes}) {
+function AthletesAdmin({t, athletes, reload}) {
   const [creating,setCreating] = useState(false);
-  const [f,setF] = useState({name:"", email:"", username:""});
+  const [f,setF] = useState({full_name:"", email:"", username:""});
   const [cred,setCred] = useState(null);
+  const [busy,setBusy] = useState(false);
+  const [err,setErr] = useState("");
   const [copied,setCopied] = useState(false);
 
-  const create = () => {
-    if(!f.name.trim()||!f.username.trim()) return;
-    const id = "a"+Date.now();
-    const pwd = genPwd();
-    setAthletes([...athletes, {id, ...f}]);
-    setCred({...f, pwd});
-    setF({name:"",email:"",username:""}); setCreating(false);
-  };
-  const copy = () => {
-    const txt = `Cargia\n${t.username}: ${cred.username}\n${t.temp_password}: ${cred.pwd}`;
+  async function create(){
+    if(!f.full_name.trim() || !f.email.trim()) return;
+    setBusy(true); setErr("");
+    const { data, error } = await db.functions.invoke("create-athlete", {
+      body: { full_name:f.full_name, email:f.email, username:f.username }
+    });
+    setBusy(false);
+    if(error || (data && data.error)) { setErr((data && data.error) || "No se pudo crear el deportista"); return; }
+    setCred({ ...data.athlete, pwd:data.password });
+    setF({full_name:"",email:"",username:""}); setCreating(false);
+    reload();
+  }
+  function copy(){
+    const txt = `Cargia\n${t.username}: ${cred.username||cred.email}\n${t.temp_password}: ${cred.pwd}`;
     if(navigator.clipboard) navigator.clipboard.writeText(txt);
     setCopied(true); setTimeout(()=>setCopied(false),1500);
-  };
+  }
 
   return (
     <div>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}}>
         <h2 style={{fontFamily:"Sora", margin:0}}>{t.athletes_title}</h2>
-        {!creating && <button onClick={()=>{setCreating(true); setCred(null);}} style={btn(C.brand)}>{t.new_athlete}</button>}
+        {!creating && <button onClick={()=>{setCreating(true); setCred(null); setErr("");}} style={btn(C.brand)}>{t.new_athlete}</button>}
       </div>
 
       {creating && (
         <div style={{...card, marginBottom:16}}>
-          <Field label={t.name} value={f.name} onChange={(v)=>setF({...f,name:v})}/>
-          <Field label={t.email} value={f.email} onChange={(v)=>setF({...f,email:v})}/>
+          <Field label={t.name} value={f.full_name} onChange={(v)=>setF({...f,full_name:v})}/>
+          <Field label={t.email} value={f.email} onChange={(v)=>setF({...f,email:v})} type="email"/>
           <Field label={t.username} value={f.username} onChange={(v)=>setF({...f,username:v})}/>
+          {err && <div style={{color:C.red, fontSize:13, marginBottom:12}}>{err}</div>}
           <div style={{display:"flex", gap:10}}>
-            <button onClick={create} style={btn(C.brand)}>{t.create}</button>
+            <button disabled={busy} onClick={create} style={btn(C.brand,{opacity:busy?0.7:1})}>{busy?t.creating:t.create}</button>
             <button onClick={()=>setCreating(false)} style={btn(C.panel2,{color:C.sub})}>{t.cancel}</button>
           </div>
         </div>
@@ -358,20 +395,21 @@ function AthletesAdmin({t, athletes, setAthletes}) {
 
       {cred && (
         <div style={{...card, marginBottom:16, borderColor:C.brand}}>
-          <div style={{fontWeight:700, marginBottom:8}}>{cred.name}</div>
-          <div style={{color:C.sub, fontSize:14, marginBottom:4}}>{t.username}: <b style={{color:C.text}}>{cred.username}</b></div>
+          <div style={{fontWeight:700, marginBottom:8}}>{cred.full_name}</div>
+          <div style={{color:C.sub, fontSize:14, marginBottom:4}}>{t.username}: <b style={{color:C.text}}>{cred.username||cred.email}</b></div>
           <div style={{color:C.sub, fontSize:14, marginBottom:12}}>{t.temp_password}: <b style={{color:C.text, fontFamily:"monospace"}}>{cred.pwd}</b></div>
           <p style={{color:C.sub, fontSize:12.5, marginTop:0}}>{t.credentials_note}</p>
           <button onClick={copy} style={btn(C.panel2,{color:C.text})}>{copied?t.copied:t.copy}</button>
         </div>
       )}
 
+      {athletes.length === 0 && !creating && <div style={{color:C.sub}}>{t.no_athletes}</div>}
       <div style={{display:"grid", gap:10}}>
         {athletes.map(a=>(
           <div key={a.id} style={{...card, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
             <div>
-              <div style={{fontWeight:600}}>{a.name}</div>
-              <div style={{color:C.sub, fontSize:13}}>{a.username} · {a.email||"—"}</div>
+              <div style={{fontWeight:600}}>{a.full_name}</div>
+              <div style={{color:C.sub, fontSize:13}}>{a.username||"—"} · {a.email||"—"}</div>
             </div>
           </div>
         ))}
@@ -380,16 +418,23 @@ function AthletesAdmin({t, athletes, setAthletes}) {
   );
 }
 
-function Teams({t, athletes, teams, setTeams}) {
+function Teams({t, athletes, teams, reload}) {
   const [creating,setCreating] = useState(false);
   const [name,setName] = useState("");
   const [picked,setPicked] = useState([]);
-  const create = () => {
+  const [busy,setBusy] = useState(false);
+
+  async function create(){
     if(!name.trim()) return;
-    setTeams([...teams, {id:"t"+Date.now(), name, memberIds:picked}]);
-    setName(""); setPicked([]); setCreating(false);
-  };
+    setBusy(true);
+    const { data: prof } = await db.auth.getUser();
+    const { data: tm } = await db.from("teams").insert({ coach_id: prof.user.id, name }).select("id").single();
+    if(tm && picked.length) await db.from("team_members").insert(picked.map(aid=>({team_id:tm.id, athlete_id:aid})));
+    setBusy(false); setName(""); setPicked([]); setCreating(false);
+    reload();
+  }
   const toggle = (id)=> setPicked(picked.includes(id)?picked.filter(x=>x!==id):[...picked,id]);
+
   return (
     <div>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}}>
@@ -404,12 +449,12 @@ function Teams({t, athletes, teams, setTeams}) {
             {athletes.map(a=>(
               <button key={a.id} onClick={()=>toggle(a.id)}
                 style={btn(picked.includes(a.id)?C.brand:C.panel2,{padding:"8px 13px", fontSize:13, color:picked.includes(a.id)?"#fff":C.sub})}>
-                {a.name}
+                {a.full_name}
               </button>
             ))}
           </div>
           <div style={{display:"flex", gap:10}}>
-            <button onClick={create} style={btn(C.brand)}>{t.create}</button>
+            <button disabled={busy} onClick={create} style={btn(C.brand,{opacity:busy?0.7:1})}>{t.create}</button>
             <button onClick={()=>setCreating(false)} style={btn(C.panel2,{color:C.sub})}>{t.cancel}</button>
           </div>
         </div>
@@ -421,7 +466,7 @@ function Teams({t, athletes, teams, setTeams}) {
             <div style={{color:C.sub, fontSize:13, marginTop:4}}>{t.athletes_count(tm.memberIds.length)}</div>
             <div style={{display:"flex", flexWrap:"wrap", gap:6, marginTop:10}}>
               {tm.memberIds.map(id=>{ const a=athletes.find(x=>x.id===id);
-                return <span key={id} style={{background:C.panel2, padding:"5px 11px", borderRadius:999, fontSize:13}}>{a?a.name:"—"}</span>; })}
+                return <span key={id} style={{background:C.panel2, padding:"5px 11px", borderRadius:999, fontSize:13}}>{a?a.full_name:"—"}</span>; })}
             </div>
           </div>
         ))}
@@ -430,27 +475,36 @@ function Teams({t, athletes, teams, setTeams}) {
   );
 }
 
-function Sessions({t, lang, athletes, teams, sessions, setSessions}) {
+function Sessions({t, lang, profile, athletes, teams, sessions, reload}) {
   const [creating,setCreating] = useState(false);
   const [teamId,setTeamId] = useState(teams[0]?teams[0].id:"");
   const [dateStr,setDateStr] = useState(new Date().toISOString().slice(0,10));
   const [mins,setMins] = useState({});
+  const [busy,setBusy] = useState(false);
   const team = teams.find(x=>x.id===teamId);
-  const create = () => {
+
+  async function create(){
     if(!team) return;
-    const offset = Math.round((today - new Date(dateStr+"T00:00:00"))/86400000);
-    const entries = team.memberIds.map(aid=>({ athleteId:aid,
-      minutes: Math.min(250, Math.max(30, parseInt(mins[aid]||90))), rpe:null, submitted:false }));
-    setSessions([{id:"s"+Date.now(), teamId, dateOffset:offset, entries}, ...sessions]);
-    setCreating(false); setMins({});
-  };
-  const shown = [...sessions].sort((a,b)=>a.dateOffset-b.dateOffset);
+    setBusy(true);
+    const { data: ses } = await db.from("sessions")
+      .insert({ team_id:teamId, session_date:dateStr, created_by:profile.id }).select("id").single();
+    if(ses){
+      const rows = team.memberIds.map(aid=>({ session_id:ses.id, athlete_id:aid,
+        minutes: Math.min(250, Math.max(30, parseInt(mins[aid]||90))) }));
+      await db.from("session_athletes").insert(rows);
+    }
+    setBusy(false); setCreating(false); setMins({});
+    reload();
+  }
+
   return (
     <div>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}}>
         <h2 style={{fontFamily:"Sora", margin:0}}>{t.sessions_title}</h2>
-        {!creating && <button onClick={()=>setCreating(true)} style={btn(C.brand)}>{t.new_session}</button>}
+        {!creating && teams.length>0 && <button onClick={()=>setCreating(true)} style={btn(C.brand)}>{t.new_session}</button>}
       </div>
+      {teams.length===0 && <div style={{color:C.sub, marginBottom:16}}>{t.no_teams}</div>}
+
       {creating && team && (
         <div style={{...card, marginBottom:16}}>
           <label style={{display:"block", marginBottom:14}}>
@@ -466,7 +520,7 @@ function Sessions({t, lang, athletes, teams, sessions, setSessions}) {
             {team.memberIds.map(aid=>{ const a=athletes.find(x=>x.id===aid);
               return (
                 <div key={aid} style={{display:"flex", alignItems:"center", gap:12}}>
-                  <span style={{flex:1}}>{a?a.name:"—"}</span>
+                  <span style={{flex:1}}>{a?a.full_name:"—"}</span>
                   <input type="number" min={30} max={250} value={mins[aid]??90}
                     onChange={(e)=>setMins({...mins,[aid]:e.target.value})}
                     style={{width:90, padding:"9px 12px", borderRadius:10, background:C.panel2, border:`1px solid ${C.line}`, color:C.text}}/>
@@ -475,31 +529,34 @@ function Sessions({t, lang, athletes, teams, sessions, setSessions}) {
               );})}
           </div>
           <div style={{display:"flex", gap:10}}>
-            <button onClick={create} style={btn(C.brand)}>{t.create}</button>
+            <button disabled={busy} onClick={create} style={btn(C.brand,{opacity:busy?0.7:1})}>{t.create}</button>
             <button onClick={()=>setCreating(false)} style={btn(C.panel2,{color:C.sub})}>{t.cancel}</button>
           </div>
         </div>
       )}
+
+      {sessions.length===0 && !creating && <div style={{color:C.sub}}>{t.no_sessions}</div>}
       <div style={{display:"grid", gap:12}}>
-        {shown.map(s=>{ const tm=teams.find(x=>x.id===s.teamId);
-          const done=s.entries.filter(e=>e.submitted).length;
+        {sessions.map(s=>{ const tm=teams.find(x=>x.id===s.team_id);
+          const entries=s.session_athletes||[];
+          const done=entries.filter(e=>e.submitted_at).length;
           return (
             <div key={s.id} style={card}>
               <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
                 <div>
                   <div style={{fontWeight:700, fontFamily:"Sora"}}>{tm?tm.name:"—"}</div>
-                  <div style={{color:C.sub, fontSize:13}}>{fmtDate(dateFromOffset(s.dateOffset), lang)}</div>
+                  <div style={{color:C.sub, fontSize:13}}>{fmtDate(s.session_date, lang)}</div>
                 </div>
-                <div style={{fontSize:13, color:done===s.entries.length?C.green:C.orange, fontWeight:700}}>
-                  {done}/{s.entries.length} {t.completed}
+                <div style={{fontSize:13, color:done===entries.length?C.green:C.orange, fontWeight:700}}>
+                  {done}/{entries.length} {t.completed}
                 </div>
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:6, marginTop:12}}>
-                {s.entries.map(e=>{ const a=athletes.find(x=>x.id===e.athleteId);
+                {entries.map(e=>{ const a=athletes.find(x=>x.id===e.athlete_id);
                   return (
-                    <span key={e.athleteId} style={{background:C.panel2, padding:"5px 11px", borderRadius:999, fontSize:12.5,
-                      borderLeft:`3px solid ${e.submitted?C.green:C.orange}`}}>
-                      {a?a.name:"—"} · {e.submitted?`RPE ${e.rpe}`:t.pending}
+                    <span key={e.id} style={{background:C.panel2, padding:"5px 11px", borderRadius:999, fontSize:12.5,
+                      borderLeft:`3px solid ${e.submitted_at?C.green:C.orange}`}}>
+                      {a?a.full_name:"—"} · {e.submitted_at?`RPE ${e.rpe}`:t.pending}
                     </span>
                   );})}
               </div>
@@ -510,21 +567,38 @@ function Sessions({t, lang, athletes, teams, sessions, setSessions}) {
   );
 }
 
-function Results({t, lang, athletes, teams, sessions, acwrVisible, setAcwrVisible}) {
+function lastLoadFor(sessions, aid){
+  let best=null;
+  for(const s of sessions){
+    const e=(s.session_athletes||[]).find(x=>x.athlete_id===aid && x.rpe!=null);
+    if(e){ if(!best || s.session_date > best.date) best={date:s.session_date, load:e.rpe*e.minutes}; }
+  }
+  return best?best.load:null;
+}
+
+function Results({t, lang, athletes, teams, sessions, acwr, reload}) {
   const [teamId,setTeamId] = useState(teams[0]?teams[0].id:"");
   const team = teams.find(x=>x.id===teamId);
+
+  async function toggleVis(aid, cur){
+    await db.from("profiles").update({ acwr_visible: !cur }).eq("id", aid);
+    reload();
+  }
+
   const rows = useMemo(()=>{
     if(!team) return [];
-    const ts = sessions.filter(s=>s.teamId===teamId);
     return team.memberIds.map(aid=>{
-      const a = athletes.find(x=>x.id===aid);
-      const {acute,chronic,acwr,hasData} = acwrFor(ts, aid);
-      const recent = ts.filter(s=>s.entries.find(e=>e.athleteId===aid&&e.rpe!==null)).sort((x,y)=>x.dateOffset-y.dateOffset)[0];
-      const le = recent && recent.entries.find(e=>e.athleteId===aid);
-      const lastLoad = le ? le.rpe*le.minutes : null;
-      return {a,acute,chronic,acwr,hasData,lastLoad};
+      const a = athletes.find(x=>x.id===aid) || {id:aid, full_name:"—"};
+      const m = acwr.find(r=>r.athlete_id===aid && r.team_id===teamId);
+      const val = m ? Number(m.acwr) : 0;
+      const hasData = !!m && val>0;
+      return {
+        a, acwr:val, hasData,
+        acute: m?Number(m.acute_7d):0, chronic: m?Number(m.chronic_28d):0,
+        lastLoad: lastLoadFor(sessions, aid),
+      };
     });
-  }, [team, teamId, sessions, athletes]);
+  }, [team, teamId, athletes, acwr, sessions]);
 
   const legend = [[C.blue,t.leg_blue],[C.green,t.leg_green],[C.orange,t.leg_orange],[C.red,t.leg_red]];
 
@@ -532,31 +606,33 @@ function Results({t, lang, athletes, teams, sessions, acwrVisible, setAcwrVisibl
     <div>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, flexWrap:"wrap", gap:10}}>
         <h2 style={{fontFamily:"Sora", margin:0}}>{t.results_title}</h2>
-        <select value={teamId} onChange={(e)=>setTeamId(e.target.value)}
-          style={{padding:"10px 14px", borderRadius:12, background:C.panel2, border:`1px solid ${C.line}`, color:C.text, fontSize:14}}>
-          {teams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
-        </select>
+        {teams.length>0 && (
+          <select value={teamId} onChange={(e)=>setTeamId(e.target.value)}
+            style={{padding:"10px 14px", borderRadius:12, background:C.panel2, border:`1px solid ${C.line}`, color:C.text, fontSize:14}}>
+            {teams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+          </select>
+        )}
       </div>
+
+      {!team && <div style={{color:C.sub}}>{t.no_teams}</div>}
 
       <div style={{display:"grid", gap:12}}>
         {rows.map(r=>{
           const col = acwrColor(r.acwr, r.hasData);
-          const val = r.hasData && r.acwr>0 ? r.acwr.toFixed(2).replace(".", lang==="es"?",":".") : t.no_data;
+          const val = r.hasData ? r.acwr.toFixed(2).replace(".", lang==="es"?",":".") : t.no_data;
+          const aObj = athletes.find(x=>x.id===r.a.id);
           return (
             <div key={r.a.id} style={{...card, padding:0, overflow:"hidden", borderLeft:`6px solid ${col}`}}>
-              {/* fila principal: nombre coloreado + ACWR grande */}
               <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, padding:"16px 18px"}}>
                 <div style={{minWidth:0}}>
-                  <div style={{fontFamily:"Sora", fontWeight:800, fontSize:19, color:col, lineHeight:1.15}}>{r.a.name}</div>
+                  <div style={{fontFamily:"Sora", fontWeight:800, fontSize:19, color:col, lineHeight:1.15}}>{r.a.full_name}</div>
                   <div style={{color:C.sub, fontSize:12.5, marginTop:2}}>{t.bands[bandIndex(r.acwr, r.hasData)]}</div>
                 </div>
                 <div style={{textAlign:"center", flexShrink:0}}>
-                  <div style={{background:col, color:"#fff", fontFamily:"Sora", fontWeight:800, fontSize:26,
-                    minWidth:78, padding:"8px 14px", borderRadius:14}}>{val}</div>
+                  <div style={{background:col, color:"#fff", fontFamily:"Sora", fontWeight:800, fontSize:26, minWidth:78, padding:"8px 14px", borderRadius:14}}>{val}</div>
                   <div style={{color:C.sub, fontSize:11, marginTop:4, letterSpacing:0.5}}>{t.acwr}</div>
                 </div>
               </div>
-              {/* detalle: carga / aguda / crónica */}
               <div style={{display:"flex", gap:8, padding:"0 18px 14px", flexWrap:"wrap"}}>
                 {[[t.load_col, r.lastLoad??"—"], [t.acute, Math.round(r.acute)], [t.chronic, Math.round(r.chronic)]].map(([lab,v])=>(
                   <div key={lab} style={{flex:"1 1 90px", background:C.panel2, borderRadius:10, padding:"8px 10px"}}>
@@ -565,100 +641,114 @@ function Results({t, lang, athletes, teams, sessions, acwrVisible, setAcwrVisibl
                   </div>
                 ))}
               </div>
-              {/* toggle visibilidad */}
-              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center",
-                padding:"12px 18px", borderTop:`1px solid ${C.line}`}}>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 18px", borderTop:`1px solid ${C.line}`}}>
                 <span style={{color:C.sub, fontSize:13}}>{t.show_acwr_athlete}</span>
-                <Toggle on={!!acwrVisible[r.a.id]} onClick={()=>setAcwrVisible({...acwrVisible, [r.a.id]: !acwrVisible[r.a.id]})}/>
+                <Toggle on={!!(aObj && aObj.acwr_visible)} onClick={()=>toggleVis(r.a.id, aObj && aObj.acwr_visible)}/>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div style={{...card, marginTop:16}}>
-        <div style={{color:C.sub, fontWeight:700, fontSize:13, marginBottom:10}}>{t.legend}</div>
-        <div style={{display:"grid", gap:8}}>
-          {legend.map(([c,label])=>(
-            <div key={label} style={{display:"flex", alignItems:"center", gap:10, fontSize:13.5}}>
-              <span style={{width:16, height:16, borderRadius:5, background:c}}/><span>{label}</span>
-            </div>
-          ))}
+      {team && (
+        <div style={{...card, marginTop:16}}>
+          <div style={{color:C.sub, fontWeight:700, fontSize:13, marginBottom:10}}>{t.legend}</div>
+          <div style={{display:"grid", gap:8}}>
+            {legend.map(([c,label])=>(
+              <div key={label} style={{display:"flex", alignItems:"center", gap:10, fontSize:13.5}}>
+                <span style={{width:16, height:16, borderRadius:5, background:c}}/><span>{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 /* ---------------- Atleta ---------------- */
-function AthleteApp({t, lang, LangToggle, athletes, teams, sessions, setSessions, acwrVisible, currentAthlete, setCurrentAthlete, onLogout}) {
-  const [active,setActive] = useState(null);
-  const myTeams = teams.filter(tm=>tm.memberIds.includes(currentAthlete));
-  const mySessions = sessions
-    .filter(s=>myTeams.some(tm=>tm.id===s.teamId))
-    .map(s=>({...s, entry:s.entries.find(e=>e.athleteId===currentAthlete)}))
-    .filter(s=>s.entry).sort((a,b)=>a.dateOffset-b.dateOffset);
+function AthleteApp({t, lang, LangToggle, profile}) {
+  const [sessions, setSessions] = useState([]);
+  const [acwr, setAcwr] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState(null);
 
-  const submit = (sid, rpe) => {
-    setSessions(sessions.map(s=> s.id!==sid ? s : {...s,
-      entries: s.entries.map(e=> e.athleteId===currentAthlete ? {...e, rpe, submitted:true} : e)}));
+  async function loadMine(){
+    setLoading(true);
+    const [s, w] = await Promise.all([
+      db.from("session_athletes")
+        .select("id,minutes,rpe,submitted_at,sessions(id,session_date,team_id,teams(name))")
+        .eq("athlete_id", profile.id),
+      db.from("v_athlete_acwr").select("*").eq("athlete_id", profile.id),
+    ]);
+    const list = (s.data||[]).map(r=>({
+      id:r.id, minutes:r.minutes, rpe:r.rpe, submitted_at:r.submitted_at,
+      session_date:r.sessions ? r.sessions.session_date : null,
+      team_name:r.sessions && r.sessions.teams ? r.sessions.teams.name : "—",
+    })).filter(r=>r.session_date).sort((a,b)=> a.session_date < b.session_date ? 1 : -1);
+    setSessions(list);
+    setAcwr((w.data && w.data[0]) ? w.data[0] : null);
+    setLoading(false);
+  }
+  useEffect(()=>{ loadMine(); }, []);
+
+  async function submit(id, rpe){
+    await db.rpc("submit_rpe", { p_session_athlete:id, p_rpe:rpe });
     setActive(null);
-  };
+    loadMine();
+  }
 
-  if(active){ const s=mySessions.find(x=>x.id===active);
-    return <RPEScreen t={t} session={s} onSave={(rpe)=>submit(s.id,rpe)} onBack={()=>setActive(null)}/>; }
+  if(active){ const s=sessions.find(x=>x.id===active);
+    return <RPEScreen t={t} session={s} onSave={(rpe)=>submit(s.id, rpe)} onBack={()=>setActive(null)}/>; }
 
-  const my = acwrFor(sessions.filter(s=>myTeams.some(tm=>tm.id===s.teamId)), currentAthlete);
-  const visible = !!acwrVisible[currentAthlete];
-  const col = acwrColor(my.acwr, my.hasData);
+  const v = acwr ? Number(acwr.acwr) : 0;
+  const hasData = !!acwr && v>0;
+  const col = acwrColor(v, hasData);
+  const visible = !!profile.acwr_visible;
 
   return (
     <div>
-      <TopBar t={t} LangToggle={LangToggle} onLogout={onLogout}/>
+      <TopBar t={t} LangToggle={LangToggle}/>
       <div style={{padding:22}}>
-        <label style={{display:"block", marginBottom:20}}>
-          <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.who}</span>
-          <select value={currentAthlete} onChange={(e)=>setCurrentAthlete(e.target.value)}
-            style={{width:"100%", maxWidth:320, marginTop:6, padding:"12px 14px", borderRadius:12, background:C.panel2, border:`1px solid ${C.line}`, color:C.text, fontSize:15}}>
-            {athletes.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
-        </label>
+        <div style={{marginBottom:18, color:C.sub}}>{profile.full_name}</div>
 
         {visible && (
           <div style={{...card, marginBottom:20, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
             <div>
               <div style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.your_acwr}</div>
-              <div style={{fontSize:13, color:col, fontWeight:700, marginTop:4}}>{t.bands[bandIndex(my.acwr,my.hasData)]}</div>
+              <div style={{fontSize:13, color:col, fontWeight:700, marginTop:4}}>{t.bands[bandIndex(v,hasData)]}</div>
             </div>
             <span style={{background:col, color:"#fff", fontWeight:800, fontSize:22, padding:"10px 18px", borderRadius:14}}>
-              {my.hasData&&my.acwr>0 ? my.acwr.toFixed(2).replace(".", lang==="es"?",":".") : "—"}
+              {hasData ? v.toFixed(2).replace(".", lang==="es"?",":".") : "—"}
             </span>
           </div>
         )}
 
         <h2 style={{fontFamily:"Sora"}}>{t.your_sessions}</h2>
-        <div style={{display:"grid", gap:12}}>
-          {mySessions.map(s=>{ const tm=teams.find(x=>x.id===s.teamId);
-            return (
+        {loading ? <div style={{color:C.sub}}>{t.loading}</div> : (
+          <div style={{display:"grid", gap:12}}>
+            {sessions.length===0 && <div style={{color:C.sub}}>{t.no_pending}</div>}
+            {sessions.map(s=>(
               <div key={s.id} style={{...card, display:"flex", justifyContent:"space-between", alignItems:"center", gap:12}}>
                 <div>
-                  <div style={{fontWeight:700}}>{tm?tm.name:"—"}</div>
-                  <div style={{color:C.sub, fontSize:13}}>{fmtDate(dateFromOffset(s.dateOffset), lang)} · {s.entry.minutes} {t.minutes_label}</div>
+                  <div style={{fontWeight:700}}>{s.team_name}</div>
+                  <div style={{color:C.sub, fontSize:13}}>{fmtDate(s.session_date, lang)} · {s.minutes} {t.minutes_label}</div>
                 </div>
-                {s.entry.submitted
-                  ? <span style={{color:C.green, fontWeight:700, fontSize:14}}>✓ {t.done} (RPE {s.entry.rpe})</span>
+                {s.submitted_at
+                  ? <span style={{color:C.green, fontWeight:700, fontSize:14}}>✓ {t.done} (RPE {s.rpe})</span>
                   : <button onClick={()=>setActive(s.id)} style={btn(C.brand)}>{t.complete_survey}</button>}
               </div>
-            );})}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-/* ---------------- Pantalla RPE ---------------- */
 function RPEScreen({t, session, onSave, onBack}) {
   const [v,setV] = useState(5);
+  const [busy,setBusy] = useState(false);
   const pct = (v/10)*100;
   const trackBg = `linear-gradient(90deg, ${C.fill} 0%, ${C.fill} ${pct}%, ${C.panel2} ${pct}%, ${C.panel2} 100%)`;
   return (
@@ -669,17 +759,15 @@ function RPEScreen({t, session, onSave, onBack}) {
         <p style={{color:C.sub, fontWeight:700, fontSize:18, marginTop:18, minHeight:28}}>{t.rpe[v]}</p>
       </div>
       <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center"}}>
-        <div style={{width:130, height:130, borderRadius:"50%", background:C.panel2, display:"flex",
-          alignItems:"center", justifyContent:"center", fontFamily:"Sora", fontWeight:800, fontSize:54}}>{v}</div>
+        <div style={{width:130, height:130, borderRadius:"50%", background:C.panel2, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Sora", fontWeight:800, fontSize:54}}>{v}</div>
       </div>
       <div style={{margin:"0 0 28px"}}>
-        <input className="cg-range" type="range" min={0} max={10} step={1}
-          value={v} onChange={(e)=>setV(parseInt(e.target.value))} style={{background:trackBg}}/>
+        <input className="cg-range" type="range" min={0} max={10} step={1} value={v} onChange={(e)=>setV(parseInt(e.target.value))} style={{background:trackBg}}/>
         <div style={{display:"flex", justifyContent:"space-between", color:C.gray, fontSize:12, marginTop:8, padding:"0 4px"}}>
           <span>0</span><span>5</span><span>10</span>
         </div>
       </div>
-      <button onClick={()=>onSave(v)} style={btn(C.brandBright,{width:"100%", padding:"16px", fontSize:17, borderRadius:16})}>{t.save}</button>
+      <button disabled={busy} onClick={()=>{ setBusy(true); onSave(v); }} style={btn(C.brandBright,{width:"100%", padding:"16px", fontSize:17, borderRadius:16, opacity:busy?0.7:1})}>{t.save}</button>
     </div>
   );
 }
