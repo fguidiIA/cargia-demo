@@ -68,6 +68,10 @@ const I18N = {
     credentials_note:"Comparte estas credenciales con el deportista. Podrá cambiarlas al entrar.",
     copy:"Copiar", copied:"¡Copiado!", creating:"Creando…", show_acwr_athlete:"ACWR visible para el deportista",
     no_athletes:"Aún no has creado deportistas.",
+    delete:"Eliminar", deleting:"Eliminando…",
+    confirm_delete_team:"¿Eliminar este equipo?",
+    confirm_delete_athlete:"¿Eliminar este deportista y TODOS sus datos? Esta acción no se puede deshacer.",
+    team_has_athletes:"Quita primero los deportistas para poder eliminar el equipo.",
     sessions_title:"Sesiones de entrenamiento", new_session:"Nueva sesión", select_team:"Equipo", date:"Fecha",
     minutes_each:"Minutos por deportista (30–250)", completed:"completado", pending:"Pendiente", minutes_label:"min",
     no_sessions:"No hay sesiones todavía.", no_teams:"Crea primero un equipo con deportistas.",
@@ -110,6 +114,10 @@ const I18N = {
     credentials_note:"Share these credentials with the athlete. They can change them on first login.",
     copy:"Copy", copied:"Copied!", creating:"Creating…", show_acwr_athlete:"ACWR visible to athlete",
     no_athletes:"You haven't created any athletes yet.",
+    delete:"Delete", deleting:"Deleting…",
+    confirm_delete_team:"Delete this team?",
+    confirm_delete_athlete:"Delete this athlete and ALL their data? This cannot be undone.",
+    team_has_athletes:"Remove athletes first to delete the team.",
     sessions_title:"Training sessions", new_session:"New session", select_team:"Team", date:"Date",
     minutes_each:"Minutes per athlete (30–250)", completed:"completed", pending:"Pending", minutes_label:"min",
     no_sessions:"No sessions yet.", no_teams:"Create a team with athletes first.",
@@ -412,6 +420,9 @@ function AthletesAdmin({t, athletes, reload}) {
   const [busy,setBusy] = useState(false);
   const [err,setErr] = useState("");
   const [copied,setCopied] = useState(false);
+  const [editingId,setEditingId] = useState(null);
+  const [editF,setEditF] = useState({full_name:"", username:""});
+  const [delErr,setDelErr] = useState("");
 
   async function create(){
     if(!f.full_name.trim() || !f.email.trim()) return;
@@ -429,6 +440,21 @@ function AthletesAdmin({t, athletes, reload}) {
     const txt = `Cargia\n${t.username}: ${cred.username||cred.email}\n${t.temp_password}: ${cred.pwd}`;
     if(navigator.clipboard) navigator.clipboard.writeText(txt);
     setCopied(true); setTimeout(()=>setCopied(false),1500);
+  }
+
+  function startEdit(a){ setEditingId(a.id); setEditF({full_name:a.full_name, username:a.username||""}); }
+  async function saveEdit(a){
+    setBusy(true);
+    await db.from("profiles").update({ full_name:editF.full_name, username:editF.username||null }).eq("id", a.id);
+    setBusy(false); setEditingId(null); reload();
+  }
+  async function removeAthlete(a){
+    if(!window.confirm(t.confirm_delete_athlete)) return;
+    setBusy(true); setDelErr("");
+    const { data, error } = await db.functions.invoke("delete-athlete", { body:{ athlete_id:a.id } });
+    setBusy(false);
+    if(error || (data && data.error)){ setDelErr((data && data.error) || "No se pudo eliminar"); return; }
+    reload();
   }
 
   return (
@@ -462,13 +488,31 @@ function AthletesAdmin({t, athletes, reload}) {
       )}
 
       {athletes.length === 0 && !creating && <div style={{color:C.sub}}>{t.no_athletes}</div>}
+      {delErr && <div style={{color:C.red, fontSize:13, marginBottom:10}}>{delErr}</div>}
       <div style={{display:"grid", gap:10}}>
         {athletes.map(a=>(
-          <div key={a.id} style={{...card, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-            <div>
-              <div style={{fontWeight:600}}>{a.full_name}</div>
-              <div style={{color:C.sub, fontSize:13}}>{a.username||"—"} · {a.email||"—"}</div>
-            </div>
+          <div key={a.id} style={card}>
+            {editingId===a.id ? (
+              <div>
+                <Field label={t.name} value={editF.full_name} onChange={(v)=>setEditF({...editF,full_name:v})}/>
+                <Field label={t.username} value={editF.username} onChange={(v)=>setEditF({...editF,username:v})}/>
+                <div style={{display:"flex", gap:10}}>
+                  <button disabled={busy} onClick={()=>saveEdit(a)} style={btn(C.brand,{opacity:busy?0.7:1})}>{t.save}</button>
+                  <button onClick={()=>setEditingId(null)} style={btn(C.panel2,{color:C.sub})}>{t.cancel}</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:10}}>
+                <div style={{minWidth:0}}>
+                  <div style={{fontWeight:600}}>{a.full_name}</div>
+                  <div style={{color:C.sub, fontSize:13}}>{a.username||"—"} · {a.email||"—"}</div>
+                </div>
+                <div style={{display:"flex", gap:8, flexShrink:0}}>
+                  <button onClick={()=>startEdit(a)} style={btn(C.panel2,{padding:"7px 12px", fontSize:13, color:C.text})}>{t.edit}</button>
+                  <button disabled={busy} onClick={()=>removeAthlete(a)} style={btn(C.panel2,{padding:"7px 12px", fontSize:13, color:C.red})}>{t.delete}</button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -510,6 +554,13 @@ function Teams({t, athletes, teams, reload}) {
     if(toAdd.length) await db.from("team_members").insert(toAdd.map(aid=>({team_id:tm.id, athlete_id:aid})));
     if(toRemove.length) await db.from("team_members").delete().eq("team_id", tm.id).in("athlete_id", toRemove);
     setBusy(false); setEditingId(null);
+    reload();
+  }
+
+  async function deleteTeam(tm){
+    if(tm.memberIds.length > 0){ alert(t.team_has_athletes); return; }
+    if(!window.confirm(t.confirm_delete_team)) return;
+    await db.from("teams").delete().eq("id", tm.id);
     reload();
   }
 
@@ -561,7 +612,12 @@ function Teams({t, athletes, teams, reload}) {
               <div>
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:10}}>
                   <div style={{fontWeight:700, fontSize:17, fontFamily:"Sora"}}>{tm.name}</div>
-                  <button onClick={()=>startEdit(tm)} style={btn(C.panel2,{padding:"7px 14px", fontSize:13, color:C.text})}>{t.edit}</button>
+                  <div style={{display:"flex", gap:8, flexShrink:0}}>
+                    <button onClick={()=>startEdit(tm)} style={btn(C.panel2,{padding:"7px 14px", fontSize:13, color:C.text})}>{t.edit}</button>
+                    {tm.memberIds.length===0 && (
+                      <button onClick={()=>deleteTeam(tm)} style={btn(C.panel2,{padding:"7px 14px", fontSize:13, color:C.red})}>{t.delete}</button>
+                    )}
+                  </div>
                 </div>
                 <div style={{color:C.sub, fontSize:13, marginTop:4}}>{t.athletes_count(tm.memberIds.length)}</div>
                 <div style={{display:"flex", flexWrap:"wrap", gap:6, marginTop:10}}>
