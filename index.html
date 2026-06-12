@@ -168,6 +168,16 @@ const INJURY_STATUS = ["active","in_treatment","monitoring","recovered"];
 function injuryColor(s){ return s==="active"?C.red : s==="in_treatment"?C.orange : s==="monitoring"?C.blue : C.green; }
 function injuryStatusLabel(t,s){ return ({active:t.st_active,in_treatment:t.st_in_treatment,monitoring:t.st_monitoring,recovered:t.st_recovered})[s]||s; }
 
+function useIsMobile(){
+  const [m,setM] = useState(typeof window!=="undefined" && window.innerWidth < 640);
+  useEffect(()=>{
+    const on = ()=> setM(window.innerWidth < 640);
+    window.addEventListener("resize", on);
+    return ()=> window.removeEventListener("resize", on);
+  }, []);
+  return m;
+}
+
 /* ---------------- UI base ---------------- */
 const Mark = ({size=30}) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
@@ -251,14 +261,14 @@ function App() {
     <div style={{display:"inline-flex", background:C.panel2, borderRadius:10, padding:3}}>
       {["es","en"].map(l=>(
         <button key={l} onClick={()=>setLang(l)}
-          style={btn(lang===l?C.brand:"transparent",{padding:"5px 12px", fontSize:13, color:lang===l?"#fff":C.sub})}>
+          style={btn(lang===l?C.brand:"transparent",{padding:"8px 13px", fontSize:13, color:lang===l?"#fff":C.sub})}>
           {l.toUpperCase()}
         </button>
       ))}
     </div>
   );
 
-  const shell = { background:C.bg, color:C.text, minHeight:"100vh", maxWidth:1000, margin:"0 auto" };
+  const shell = { background:C.bg, color:C.text, minHeight:"100vh", maxWidth:1000, margin:"0 auto", paddingBottom:"env(safe-area-inset-bottom)" };
 
   let content;
   if (session === undefined) content = <Splash t={t}/>;
@@ -286,7 +296,7 @@ function Login({t, LangToggle}) {
   }
 
   return (
-    <div style={{padding:"48px 28px", textAlign:"center"}}>
+    <div style={{padding:"28px 28px 48px", paddingTop:"calc(env(safe-area-inset-top) + 28px)", textAlign:"center"}}>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:48}}>
         <div style={{display:"flex", alignItems:"center", gap:10}}><Mark/><Brand fontSize={22}/></div>
         <LangToggle/>
@@ -317,20 +327,21 @@ function Login({t, LangToggle}) {
 
 /* ---------------- TopBar ---------------- */
 function TopBar({t, LangToggle, tabs, tab, setTab}) {
+  const mobile = useIsMobile();
   return (
-    <div style={{borderBottom:`1px solid ${C.line}`, position:"sticky", top:0, background:C.bg, zIndex:5}}>
-      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 22px"}}>
-        <div style={{display:"flex", alignItems:"center", gap:10}}><Mark size={28}/><Brand/></div>
-        <div style={{display:"flex", alignItems:"center", gap:12}}>
+    <div style={{borderBottom:`1px solid ${C.line}`, position:"sticky", top:0, background:C.bg, zIndex:5, paddingTop:"env(safe-area-inset-top)"}}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 18px", gap:10}}>
+        <div style={{display:"flex", alignItems:"center", gap:10, minWidth:0}}><Mark size={28}/><Brand/></div>
+        <div style={{display:"flex", alignItems:"center", gap:10, flexShrink:0}}>
           <LangToggle/>
-          <button onClick={()=>db.auth.signOut()} style={btn(C.panel2,{padding:"8px 14px", fontSize:13, color:C.sub})}>{t.logout}</button>
+          <button onClick={()=>db.auth.signOut()} style={btn(C.panel2,{padding:"10px 14px", fontSize:13, color:C.sub})}>{t.logout}</button>
         </div>
       </div>
       {tabs && (
-        <div style={{display:"flex", gap:6, padding:"0 22px 14px", overflowX:"auto"}}>
+        <div style={{display:"flex", flexWrap:"wrap", gap:8, padding:"0 18px 14px"}}>
           {tabs.map(([key,label])=>(
             <button key={key} onClick={()=>setTab(key)}
-              style={btn(tab===key?C.brand:"transparent",{padding:"8px 16px", fontSize:14, color:tab===key?"#fff":C.sub, whiteSpace:"nowrap"})}>
+              style={btn(tab===key?C.brand:C.panel2,{padding: mobile?"12px 18px":"8px 16px", fontSize: mobile?15:14, color:tab===key?"#fff":C.sub, whiteSpace:"nowrap"})}>
               {label}
             </button>
           ))}
@@ -1160,7 +1171,7 @@ function RPEScreen({t, session, onSave, onBack}) {
   const pct = (v/10)*100;
   const trackBg = `linear-gradient(90deg, ${C.fill} 0%, ${C.fill} ${pct}%, ${C.panel2} ${pct}%, ${C.panel2} 100%)`;
   return (
-    <div style={{padding:"20px 24px 40px", minHeight:"100vh", display:"flex", flexDirection:"column"}}>
+    <div style={{padding:"20px 24px", paddingTop:"calc(env(safe-area-inset-top) + 16px)", paddingBottom:"calc(env(safe-area-inset-bottom) + 28px)", minHeight:"100vh", display:"flex", flexDirection:"column"}}>
       <button onClick={onBack} style={{background:"none", border:"none", color:C.text, fontSize:26, cursor:"pointer", alignSelf:"flex-start"}}>←</button>
       <div style={{textAlign:"center", marginTop:30}}>
         <h1 style={{fontFamily:"Sora", fontWeight:800, fontSize:30, lineHeight:1.15, margin:"0 auto", maxWidth:420}}>{t.rpe_question}</h1>
