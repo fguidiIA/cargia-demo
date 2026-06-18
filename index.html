@@ -39,7 +39,7 @@ const { useState, useEffect, useMemo } = React;
    La anon key es pública y segura: la protección la da el RLS.
 =================================================================== */
 const SUPABASE_URL      = "https://beuajnzeduzmkusuyccm.supabase.co";   // tu Project URL
-const SUPABASE_ANON_KEY = "TU_ANON_KEY";                  // <-- pega aquí tu anon key (la larga, eyJ...)
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldWFqbnplZHV6bWt1c3V5Y2NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0NDYsImV4cCI6MjA5NjU5NTQ0Nn0.bFZUeVO284An23BtuV9so61_Gzy_5iGpik1BTRM9Voo";                  // <-- pega aquí tu anon key (la larga, eyJ...)
 /* =================================================================== */
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
