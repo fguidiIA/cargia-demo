@@ -100,6 +100,16 @@ const I18N = {
     bands:["Baja carga","Zona óptima","Precaución","Riesgo alto","Sin datos"],
     rpe:["Nada (reposo)","Muy, muy suave","Suave","Moderado","Algo duro","Duro",
          "Entre duro y muy duro","Muy duro","Muy, muy duro","Casi máximo","Máximo"],
+    /* --- Banderas / alertas visuales del panel del preparador --- */
+    chip_alerts:"Alertas", chip_warnings:"Avisos", chip_nodata:"Sin datos", chip_ok:"Sin incidencias",
+    flag_acwr_high:"ACWR alto", flag_acwr_high_t:"ACWR > 1,6 · riesgo alto de carga",
+    flag_acwr_mid:"ACWR elevado", flag_acwr_mid_t:"ACWR 1,3–1,6 · precaución",
+    flag_wellness_low:"Bienestar bajo", flag_wellness_low_t:"Último índice de bienestar < 14",
+    flag_wellness_mid:"Bienestar medio", flag_wellness_mid_t:"Último índice de bienestar 14–19",
+    flag_injury_active:"Lesión activa", flag_injury_active_t:"Lesión con estado activo",
+    flag_injury_treat:"En tratamiento", flag_injury_treat_t:"Lesión en tratamiento",
+    flag_no_checkin:"Sin check-in", flag_no_checkin_t:"Sin registro de bienestar en los últimos 3 días",
+    flag_rpe_pending:"RPE pendiente", flag_rpe_pending_t:"Sesiones recientes sin RPE entregado (7 días)",
   },
   en: {
     tagline:"Training load monitoring",
@@ -147,6 +157,16 @@ const I18N = {
     bands:["Undertraining","Sweet spot","Caution","High risk","No data"],
     rpe:["Rest (nothing at all)","Very, very easy","Easy","Moderate","Somewhat hard","Hard",
          "Hard to very hard","Very hard","Very, very hard","Near maximal","Maximal"],
+    /* --- Visual flags / alerts on the coach panel --- */
+    chip_alerts:"Alerts", chip_warnings:"Warnings", chip_nodata:"No data", chip_ok:"All clear",
+    flag_acwr_high:"High ACWR", flag_acwr_high_t:"ACWR > 1.6 · high load risk",
+    flag_acwr_mid:"Elevated ACWR", flag_acwr_mid_t:"ACWR 1.3–1.6 · caution",
+    flag_wellness_low:"Low wellness", flag_wellness_low_t:"Latest wellness score < 14",
+    flag_wellness_mid:"Medium wellness", flag_wellness_mid_t:"Latest wellness score 14–19",
+    flag_injury_active:"Active injury", flag_injury_active_t:"Injury with active status",
+    flag_injury_treat:"In treatment", flag_injury_treat_t:"Injury in treatment",
+    flag_no_checkin:"No check-in", flag_no_checkin_t:"No wellness entry in the last 3 days",
+    flag_rpe_pending:"RPE pending", flag_rpe_pending_t:"Recent sessions without submitted RPE (7 days)",
   },
 };
 
@@ -472,8 +492,8 @@ function CoachApp({t, lang, LangToggle, profile}) {
         {loading ? <div style={{color:C.sub, padding:"30px 0", textAlign:"center"}}>{t.loading}</div> : (
           <React.Fragment>
             {tab==="sessions" && <Sessions t={t} lang={lang} profile={profile} athletes={athletes} teams={teams} sessions={sessions} reload={loadAll}/>}
-            {tab==="results"  && <Results t={t} lang={lang} athletes={athletes} teams={teams} sessions={sessions} acwr={acwr} reload={loadAll}/>}
-            {tab==="wellness" && <WellnessCoach t={t} lang={lang} athletes={athletes} teams={teams} wellness={wellness}/>}
+            {tab==="results"  && <Results t={t} lang={lang} athletes={athletes} teams={teams} sessions={sessions} acwr={acwr} wellness={wellness} injuries={injuries} reload={loadAll}/>}
+            {tab==="wellness" && <WellnessCoach t={t} lang={lang} athletes={athletes} teams={teams} wellness={wellness} acwr={acwr} injuries={injuries} sessions={sessions}/>}
             {tab==="injuries" && <InjuriesCoach t={t} lang={lang} profile={profile} athletes={athletes} injuries={injuries} catalog={catalog} reload={loadAll}/>}
             {tab==="teams"    && <Teams t={t} athletes={athletes} teams={teams} reload={loadAll}/>}
             {tab==="athletes" && <AthletesAdmin t={t} athletes={athletes} reload={loadAll}/>}
@@ -840,7 +860,140 @@ function lastLoadFor(sessions, aid){
   return best?best.load:null;
 }
 
-function Results({t, lang, athletes, teams, sessions, acwr, reload}) {
+/* ===================================================================
+   BANDERAS / ALERTAS VISUALES DEL PANEL DEL PREPARADOR
+   Señalización SOLO en pantalla (sin push, sin email). Todo se calcula
+   en cliente con los datos YA cargados en loadAll() del CoachApp:
+   athletes, acwr (vista v_athlete_acwr), wellness, injuries y sessions.
+=================================================================== */
+
+// Umbrales PROVISIONALES para las banderas de "datos faltantes".
+// provisional, pendiente de calibrar
+const FLAG_WELLNESS_STALE_DAYS = 3; // sin check-in de bienestar en estos días
+// provisional, pendiente de calibrar
+const FLAG_RPE_PENDING_DAYS    = 7; // sesiones recientes con RPE sin entregar
+
+// Severidades y su prioridad (mayor número = manda en el recuento del chip):
+// rojo (alerta) > naranja (aviso) > gris (sin datos).
+const SEV_PRIORITY = { alert:3, warn:2, nodata:1 };
+
+/* athleteFlags — helper PURO. Devuelve el array de banderas activas de un
+   deportista. Cada bandera: { id, sev, color, icon, label, title }.
+   Recibe el id del deportista y todos los arrays/contexto ya cargados.
+   Tolera ausencia de cualquier dato (guardas en todos los accesos). */
+function athleteFlags(aid, ctx){
+  const { t, acwr=[], wellness=[], injuries=[], sessions=[], teamId } = ctx || {};
+  const flags = [];
+
+  // --- F1/F2 · ACWR (vista v_athlete_acwr, filtrada por equipo) ---
+  const m = acwr.find(r => r.athlete_id===aid && r.team_id===teamId);
+  const acwrVal = m ? Number(m.acwr) : 0;
+  const acwrHas = !!m && acwrVal>0;
+  if (acwrHas){
+    const col = acwrColor(acwrVal, true);
+    if (col===C.red)
+      flags.push({ id:"acwr_high", sev:"alert", color:C.red, icon:"▲", label:t.flag_acwr_high, title:t.flag_acwr_high_t });
+    else if (col===C.orange)
+      flags.push({ id:"acwr_mid", sev:"warn", color:C.orange, icon:"△", label:t.flag_acwr_mid, title:t.flag_acwr_mid_t });
+  }
+
+  // --- F3/F4 · Bienestar (último registro del deportista) ---
+  let lastW = null;
+  for (const w of (wellness||[])){
+    if (w.athlete_id!==aid) continue;
+    if (!lastW || (w.entry_date||"") > (lastW.entry_date||"")) lastW = w;
+  }
+  if (lastW && lastW.wellness_score!=null){
+    const col = wellnessColor(lastW.wellness_score);
+    if (col===C.red)
+      flags.push({ id:"well_low", sev:"alert", color:C.red, icon:"♥", label:t.flag_wellness_low, title:t.flag_wellness_low_t });
+    else if (col===C.orange)
+      flags.push({ id:"well_mid", sev:"warn", color:C.orange, icon:"♡", label:t.flag_wellness_mid, title:t.flag_wellness_mid_t });
+  }
+
+  // --- F5/F6 · Lesiones (activa manda; en tratamiento solo si no hay activa) ---
+  const myInj = (injuries||[]).filter(i => i.athlete_id===aid);
+  const hasActive = myInj.some(i => i.status==="active");
+  const hasTreat  = myInj.some(i => i.status==="in_treatment");
+  if (hasActive)
+    flags.push({ id:"inj_active", sev:"alert", color:C.red, icon:"✚", label:t.flag_injury_active, title:t.flag_injury_active_t });
+  else if (hasTreat)
+    flags.push({ id:"inj_treat", sev:"warn", color:C.orange, icon:"✚", label:t.flag_injury_treat, title:t.flag_injury_treat_t });
+
+  // --- F7 · Sin check-in de bienestar reciente (gris / sin datos) ---
+  const wellCutoff = cutoffDateStr(FLAG_WELLNESS_STALE_DAYS);
+  const recentCheckin = !!(lastW && (lastW.entry_date||"") >= wellCutoff);
+  if (!recentCheckin)
+    flags.push({ id:"no_checkin", sev:"nodata", color:C.gray, icon:"◷", label:t.flag_no_checkin, title:t.flag_no_checkin_t });
+
+  // --- F8 · RPE pendiente en sesiones recientes del equipo (gris / sin datos) ---
+  const rpeCutoff = cutoffDateStr(FLAG_RPE_PENDING_DAYS);
+  let rpePending = false;
+  for (const s of (sessions||[])){
+    if (s.team_id!==teamId) continue;
+    if ((s.session_date||"") < rpeCutoff) continue;
+    const e = (s.session_athletes||[]).find(x => x.athlete_id===aid);
+    if (e && e.rpe==null){ rpePending = true; break; }
+  }
+  if (rpePending)
+    flags.push({ id:"rpe_pending", sev:"nodata", color:C.gray, icon:"◔", label:t.flag_rpe_pending, title:t.flag_rpe_pending_t });
+
+  return flags;
+}
+
+// Severidad principal de un deportista a partir de sus banderas.
+// Devuelve "alert" | "warn" | "nodata" | "ok".
+function topSeverity(flags){
+  if (!flags || flags.length===0) return "ok";
+  let best = null;
+  for (const f of flags){ if (best===null || SEV_PRIORITY[f.sev] > SEV_PRIORITY[best]) best = f.sev; }
+  return best || "ok";
+}
+
+/* FlagBadges — pinta todas las banderas de un deportista como badges
+   compactos. Accesible: icono + texto + title (no depende solo del color). */
+function FlagBadges({flags}){
+  if (!flags || flags.length===0) return null;
+  return (
+    <div style={{display:"flex", flexWrap:"wrap", gap:6, marginTop:10}}>
+      {flags.map(f=>(
+        <span key={f.id} title={f.title}
+          style={{display:"inline-flex", alignItems:"center", gap:5, background:C.panel2,
+            border:`1px solid ${f.color}`, color:f.color, borderRadius:999,
+            padding:"4px 10px", fontSize:12, fontWeight:700, lineHeight:1.2}}>
+          <span aria-hidden="true">{f.icon}</span>
+          <span>{f.label}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/* FlagChips — fila de chips de RESUMEN (recuento de DEPORTISTAS distintos por
+   severidad principal) encima de la lista. Cada chip: emoji + color + texto. */
+function FlagChips({t, counts}){
+  const chips = [
+    ["alert",  "🔴", C.red,    t.chip_alerts],
+    ["warn",   "🟠", C.orange, t.chip_warnings],
+    ["nodata", "⚪", C.gray,   t.chip_nodata],
+    ["ok",     "🟢", C.green,  t.chip_ok],
+  ];
+  return (
+    <div style={{display:"flex", flexWrap:"wrap", gap:8, marginBottom:14}}>
+      {chips.map(([key,emoji,col,label])=>(
+        <span key={key} title={`${label}: ${counts[key]||0}`}
+          style={{display:"inline-flex", alignItems:"center", gap:6, background:C.panel,
+            border:`1px solid ${col}`, borderRadius:999, padding:"6px 12px", fontSize:13, fontWeight:700}}>
+          <span aria-hidden="true">{emoji}</span>
+          <span style={{color:C.sub}}>{label}</span>
+          <span style={{color:col}}>{counts[key]||0}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function Results({t, lang, athletes, teams, sessions, acwr, wellness, injuries, reload}) {
   const [teamId,setTeamId] = useState(teams[0]?teams[0].id:"");
   const team = teams.find(x=>x.id===teamId);
 
@@ -869,14 +1022,23 @@ function Results({t, lang, athletes, teams, sessions, acwr, reload}) {
         const e = (s.session_athletes||[]).find(x=>x.athlete_id===aid && x.rpe!=null);
         if(e) loadSeries.push({ value: e.rpe * e.minutes });
       }
+      // Banderas/alertas visuales del deportista (datos ya cargados).
+      const flags = athleteFlags(aid, { t, acwr, wellness, injuries, sessions, teamId });
       return {
         a, acwr:val, hasData,
         acute: m?Number(m.acute_7d):0, chronic: m?Number(m.chronic_28d):0,
         lastLoad: lastLoadFor(sessions, aid),
-        loadSeries,
+        loadSeries, flags, sev: topSeverity(flags),
       };
     });
-  }, [team, teamId, athletes, acwr, sessions]);
+  }, [team, teamId, athletes, acwr, sessions, wellness, injuries, t]);
+
+  // Recuento de DEPORTISTAS distintos por severidad principal (para los chips).
+  const counts = useMemo(()=>{
+    const c = { alert:0, warn:0, nodata:0, ok:0 };
+    for(const r of rows) c[r.sev] = (c[r.sev]||0) + 1;
+    return c;
+  }, [rows]);
 
   const legend = [[C.blue,t.leg_blue],[C.green,t.leg_green],[C.orange,t.leg_orange],[C.red,t.leg_red]];
 
@@ -893,6 +1055,8 @@ function Results({t, lang, athletes, teams, sessions, acwr, reload}) {
       </div>
 
       {!team && <div style={{color:C.sub}}>{t.no_teams}</div>}
+
+      {team && <FlagChips t={t} counts={counts}/>}
 
       <div style={{display:"grid", gap:12}}>
         {rows.map(r=>{
@@ -925,6 +1089,7 @@ function Results({t, lang, athletes, teams, sessions, acwr, reload}) {
                   <span style={{color:C.gray, fontSize:10.5}}>{t.trend_window}</span>
                 </div>
                 <Sparkline type="bar" data={r.loadSeries} color={C.blue} height={44} empty={t.no_data}/>
+                <FlagBadges flags={r.flags}/>
               </div>
               <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 18px", borderTop:`1px solid ${C.line}`}}>
                 <span style={{color:C.sub, fontSize:13}}>{t.show_acwr_athlete}</span>
@@ -952,11 +1117,34 @@ function Results({t, lang, athletes, teams, sessions, acwr, reload}) {
 }
 
 /* ---------------- Bienestar (Preparador) ---------------- */
-function WellnessCoach({t, lang, athletes, teams, wellness}) {
+function WellnessCoach({t, lang, athletes, teams, wellness, acwr=[], injuries=[], sessions=[]}) {
   const [teamId,setTeamId] = useState(teams[0]?teams[0].id:"");
   const team = teams.find(x=>x.id===teamId);
   const latest = useMemo(()=>latestWellnessByAthlete(wellness), [wellness]);
   const ids = team ? team.memberIds : [];
+
+  // Banderas/alertas por deportista del equipo (datos ya cargados) + recuentos
+  // de DEPORTISTAS distintos por severidad principal para los chips de resumen.
+  // Se derivan de teamId/teams (dependencias estables) recalculando los ids
+  // DENTRO del memo, para no depender del array `ids` que cambia de referencia
+  // en cada render y para recalcular siempre que cambia el equipo activo.
+  const flagsByAthlete = useMemo(()=>{
+    const tm = teams.find(x=>x.id===teamId);
+    const memberIds = tm ? tm.memberIds : [];
+    const map = {};
+    for(const aid of memberIds){
+      map[aid] = athleteFlags(aid, { t, acwr, wellness, injuries, sessions, teamId });
+    }
+    return map;
+  }, [teamId, teams, acwr, wellness, injuries, sessions, t]);
+
+  const counts = useMemo(()=>{
+    const tm = teams.find(x=>x.id===teamId);
+    const memberIds = tm ? tm.memberIds : [];
+    const c = { alert:0, warn:0, nodata:0, ok:0 };
+    for(const aid of memberIds){ c[topSeverity(flagsByAthlete[aid])] += 1; }
+    return c;
+  }, [teamId, teams, flagsByAthlete]);
 
   // Series de bienestar por deportista: wellness_score por día de los últimos
   // 28 días, en orden cronológico ascendente, omitiendo días sin entrada.
@@ -987,6 +1175,7 @@ function WellnessCoach({t, lang, athletes, teams, wellness}) {
         )}
       </div>
       {!team && <div style={{color:C.sub}}>{t.no_teams}</div>}
+      {team && <FlagChips t={t} counts={counts}/>}
       <div style={{display:"grid", gap:12}}>
         {ids.map(aid=>{
           const a = athletes.find(x=>x.id===aid) || {full_name:"—"};
@@ -1020,6 +1209,7 @@ function WellnessCoach({t, lang, athletes, teams, wellness}) {
                 </div>
                 <Sparkline type="line" data={series[aid]||[]} color={C.accent} height={44} empty={t.no_data}/>
               </div>
+              <FlagBadges flags={flagsByAthlete[aid]}/>
             </div>
           );
         })}
