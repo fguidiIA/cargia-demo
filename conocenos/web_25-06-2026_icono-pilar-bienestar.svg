@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 128 128" role="img">
+  <title>Anillo de progreso de bienestar con checkmark</title>
+  <defs>
+    <style>
+      .bien-fondo  { fill: #1E293B; }
+      .bien-pista  { fill: none; stroke: #334155; stroke-width: 10; }
+      .bien-arco   { fill: none; stroke: #10B981; stroke-width: 10;
+                     stroke-linecap: round; stroke-dasharray: 188 251;
+                     transform-origin: 64px 64px; transform: rotate(-90deg); }
+      .bien-check  { fill: none; stroke: #F8FAFC; stroke-width: 8;
+                     stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="128" height="128" rx="20" class="bien-fondo"/>
+
+  <!-- Pista del anillo (fondo gris) -->
+  <circle cx="64" cy="64" r="40" class="bien-pista"/>
+
+  <!-- Arco de progreso (~75% lleno) -->
+  <circle cx="64" cy="64" r="40" class="bien-arco"/>
+
+  <!-- Checkmark vectorial -->
+  <path d="M44 64 L57 77 L84 50" class="bien-check"/>
+</svg>

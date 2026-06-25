@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img">
+  <title>Calendario con sesión marcada</title>
+  <defs>
+    <style>
+      .cal-fondo    { fill: #1E293B; }
+      .cal-cuerpo   { fill: #1E3A5F; stroke: #F8FAFC; stroke-width: 1.5; }
+      .cal-cabecera { fill: #1E40AF; }
+      .cal-linea    { stroke: #475569; stroke-width: 1.2; }
+      .cal-hoy      { fill: #1E40AF; }
+    </style>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="64" height="64" rx="14" class="cal-fondo"/>
+
+  <!-- Cuerpo calendario -->
+  <rect x="10" y="16" width="44" height="38" rx="3" class="cal-cuerpo"/>
+
+  <!-- Cabecera -->
+  <rect x="10" y="16" width="44" height="11" rx="3" class="cal-cabecera"/>
+  <!-- Tapa inferior de la cabecera (para que el rx no aparezca abajo) -->
+  <rect x="10" y="22" width="44" height="5" class="cal-cabecera"/>
+
+  <!-- Divisores horizontales (filas de días) -->
+  <line x1="10" y1="36" x2="54" y2="36" class="cal-linea"/>
+  <line x1="10" y1="45" x2="54" y2="45" class="cal-linea"/>
+
+  <!-- Divisores verticales (columnas días) -->
+  <line x1="25" y1="27" x2="25" y2="54" class="cal-linea"/>
+  <line x1="40" y1="27" x2="40" y2="54" class="cal-linea"/>
+
+  <!-- Círculo "hoy" marcado — celda central fila 1 -->
+  <circle cx="32" cy="31" r="5" class="cal-hoy"/>
+</svg>

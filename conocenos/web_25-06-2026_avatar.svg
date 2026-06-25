@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img" aria-labelledby="avatar-title">
+  <title id="avatar-title">Avatar placeholder de persona para testimonios de usuarios de CargIA</title>
+  <defs>
+    <style>
+      .av-bg  { fill: #1E293B; }
+      .av-pri { fill: #1E40AF; }
+      .av-sec { fill: #94A3B8; }
+      .av-ace { fill: #10B981; }
+    </style>
+    <linearGradient id="avatar-bodyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1E40AF" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#1E40AF" stop-opacity="0.4"/>
+    </linearGradient>
+    <clipPath id="avatar-clip">
+      <rect width="64" height="64" rx="50"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fondo circular -->
+  <rect width="64" height="64" rx="32" fill="#1E293B"/>
+
+  <!-- Fondo gradiente sutil -->
+  <rect width="64" height="64" rx="32" fill="#1E40AF" opacity="0.12"/>
+
+  <!-- Silueta: cabeza -->
+  <circle cx="32" cy="22" r="11" fill="#94A3B8" opacity="0.7"/>
+
+  <!-- Silueta: cuerpo / hombros (media silueta inferior) -->
+  <ellipse cx="32" cy="54" rx="18" ry="14" fill="#94A3B8" opacity="0.5"/>
+
+  <!-- Overlap: ocultamos la parte del cuerpo que sobresale del círculo con fondo -->
+  <!-- Esto simula que la silueta está recortada al contorno del avatar -->
+  <path d="M0 64 L64 64 L64 46 Q56 38 32 38 Q8 38 0 46 Z" fill="#1E293B" opacity="0"/>
+
+  <!-- Punto acento en borde inferior (indicador activo) -->
+  <circle cx="50" cy="50" r="5" fill="#1E293B"/>
+  <circle cx="50" cy="50" r="5" fill="none" stroke="#10B981" stroke-width="1.5"/>
+  <circle cx="50" cy="50" r="2.5" fill="#10B981"/>
+
+  <!-- Borde circular exterior -->
+  <rect width="64" height="64" rx="32" fill="none" stroke="#1E40AF" stroke-width="1.5" opacity="0.5"/>
+</svg>

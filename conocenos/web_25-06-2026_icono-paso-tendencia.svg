@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img">
+  <title>Gráfico de tendencia ascendente</title>
+  <defs>
+    <style>
+      .tend-fondo   { fill: #1E293B; }
+      .tend-linea   { fill: none; stroke: #F8FAFC; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+      .tend-punto   { fill: #F8FAFC; }
+      .tend-final   { fill: #10B981; }
+    </style>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="64" height="64" rx="14" class="tend-fondo"/>
+
+  <!-- Línea ascendente -->
+  <polyline points="12,48 24,40 34,30 44,22 52,14" class="tend-linea"/>
+
+  <!-- Puntos de la línea -->
+  <circle cx="12" cy="48" r="3" class="tend-punto"/>
+  <circle cx="24" cy="40" r="3" class="tend-punto"/>
+  <circle cx="34" cy="30" r="3" class="tend-punto"/>
+  <circle cx="44" cy="22" r="3" class="tend-punto"/>
+
+  <!-- Punto final destacado -->
+  <circle cx="52" cy="14" r="5.5" class="tend-final"/>
+</svg>

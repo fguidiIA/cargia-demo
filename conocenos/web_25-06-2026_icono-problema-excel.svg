@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img">
+  <title>Hoja de cálculo con datos desconocidos</title>
+  <defs>
+    <style>
+      .excel-fondo  { fill: #1E293B; }
+      .excel-doc    { fill: #334155; stroke: #F8FAFC; stroke-width: 2; }
+      .excel-dato   { fill: #64748B; }
+      .excel-vacio  { fill: #475569; }
+      .excel-badge  { fill: #F59E0B; }
+      .excel-q      { fill: #1E293B; }
+    </style>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="64" height="64" rx="14" class="excel-fondo"/>
+
+  <!-- Documento con esquina doblada -->
+  <path d="M14 10 H38 L46 18 V54 H14 Z" class="excel-doc"/>
+  <!-- Pliegue esquina -->
+  <path d="M38 10 L38 18 L46 18" fill="none" stroke="#F8FAFC" stroke-width="1.5"/>
+
+  <!-- Fila datos 1 -->
+  <rect x="18" y="23" width="24" height="4" rx="1" class="excel-dato"/>
+  <!-- Fila datos 2 -->
+  <rect x="18" y="31" width="20" height="4" rx="1" class="excel-dato"/>
+  <!-- Fila vacía (tenue) -->
+  <rect x="18" y="39" width="18" height="4" rx="1" class="excel-vacio" opacity="0.6"/>
+
+  <!-- Badge círculo amarillo -->
+  <circle cx="46" cy="50" r="8" class="excel-badge"/>
+
+  <!-- Signo "?" como path vectorial -->
+  <path d="M44.3 46.5 Q44.3 44.8 46 44.8 Q47.7 44.8 47.7 46.5 Q47.7 47.6 46 48.3 L46 49.2" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="46" cy="50.8" r="0.9" fill="#1E293B"/>
+</svg>

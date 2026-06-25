@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 128 128" role="img">
+  <title>Histograma de carga de entrenamiento</title>
+  <defs>
+    <style>
+      .carga-fondo  { fill: #1E293B; }
+      .carga-azul   { fill: #1E40AF; }
+      .carga-alerta { fill: #F59E0B; }
+    </style>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="128" height="128" rx="20" class="carga-fondo"/>
+
+  <!-- 5 barras verticales de izquierda a derecha, alturas progresivas -->
+  <!-- Barra 1 — azul, altura 30 -->
+  <rect x="18" y="84" width="16" height="30" rx="3" class="carga-azul"/>
+  <!-- Barra 2 — azul, altura 46 -->
+  <rect x="38" y="68" width="16" height="46" rx="3" class="carga-azul"/>
+  <!-- Barra 3 — azul, altura 58 -->
+  <rect x="58" y="56" width="16" height="58" rx="3" class="carga-azul"/>
+  <!-- Barra 4 — azul, altura 68 -->
+  <rect x="78" y="46" width="16" height="68" rx="3" class="carga-azul"/>
+  <!-- Barra 5 — naranja (sobrecarga), la más alta, altura 84 -->
+  <rect x="94" y="30" width="16" height="84" rx="3" class="carga-alerta"/>
+</svg>

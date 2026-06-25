@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 128 128" role="img">
+  <title>Escudo de protección con cruz médica</title>
+  <defs>
+    <style>
+      .les2-fondo   { fill: #1E293B; }
+      .les2-escudo  { fill: #1E3A6E; stroke: #1E40AF; stroke-width: 3; }
+      .les2-cruz    { fill: #EF4444; }
+    </style>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="128" height="128" rx="20" class="les2-fondo"/>
+
+  <!-- Escudo -->
+  <path d="M64 18 L100 30 L100 68 Q100 95 64 112 Q28 95 28 68 L28 30 Z" class="les2-escudo"/>
+
+  <!-- Cruz médica — barra horizontal -->
+  <rect x="48" y="58" width="32" height="12" rx="4" class="les2-cruz"/>
+  <!-- Cruz médica — barra vertical -->
+  <rect x="58" y="48" width="12" height="32" rx="4" class="les2-cruz"/>
+</svg>

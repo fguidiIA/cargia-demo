@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CargIA — Monitoriza la carga, el bienestar y las lesiones de tus deportistas</title>
+  <meta name="description" content="CargIA centraliza la carga de entrenamiento, el bienestar y las lesiones de tus deportistas en tiempo real. Sin Excels. Sin WhatsApps.">
+  <meta name="theme-color" content="#0F172A">
+
+  <!-- Tipografía Inter (Google Fonts) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS vía CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Configuración de Tailwind: paleta del proyecto y tipografía Inter
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primario:   '#1E40AF', // azul eléctrico
+            acento:     '#10B981', // verde rendimiento
+            fondo:      '#0F172A', // gris muy oscuro (fondo base)
+            superficie: '#1E293B', // superficie de tarjetas
+            'texto-1':  '#F8FAFC', // texto principal
+            'texto-2':  '#94A3B8', // texto secundario
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* Scroll suave para los anclajes internos */
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    /* Foco visible y accesible en enlaces y botones */
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid #10B981;
+      outline-offset: 3px;
+      border-radius: 8px;
+    }
+    /* Que los SVG inline nunca desborden su contenedor */
+    svg { max-width: 100%; height: auto; }
+  </style>
+</head>
+
+<body class="bg-fondo text-texto-1 antialiased selection:bg-primario/40">
+
+  <!-- ====================== HEADER / NAV ====================== -->
+  <header class="sticky top-0 z-50 bg-fondo/85 backdrop-blur border-b border-white/5">
+    <div class="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center justify-between">
+      <!-- Marca -->
+      <a href="#top" class="flex items-center gap-2.5" aria-label="CargIA — inicio de la página">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primario font-extrabold text-sm text-texto-1">CA</span>
+        <span class="text-lg font-bold tracking-tight">CargIA</span>
+      </a>
+      <!-- Navegación de escritorio -->
+      <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-texto-2" aria-label="Navegación principal">
+        <a href="#problema" class="hover:text-texto-1 transition-colors">El problema</a>
+        <a href="#como-funciona" class="hover:text-texto-1 transition-colors">Cómo funciona</a>
+        <a href="#pilares" class="hover:text-texto-1 transition-colors">Pilares</a>
+        <a href="#roles" class="hover:text-texto-1 transition-colors">Para quién es</a>
+      </nav>
+      <!-- CTA cabecera -->
+      <a href="https://cargia.app"
+         class="inline-flex items-center rounded-lg bg-acento px-4 py-2 text-sm font-semibold text-fondo hover:bg-emerald-400 transition-colors">
+        Empieza gratis
+      </a>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ====================== 1. HERO ====================== -->
+    <section class="relative overflow-hidden">
+      <!-- Resplandor decorativo de fondo -->
+      <div class="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primario/20 blur-3xl" aria-hidden="true"></div>
+      <div class="pointer-events-none absolute top-20 right-0 h-80 w-80 rounded-full bg-acento/10 blur-3xl" aria-hidden="true"></div>
+
+      <div class="relative mx-auto max-w-6xl px-5 sm:px-8 py-16 md:py-24 grid gap-12 lg:grid-cols-2 lg:items-center">
+        <!-- Columna texto -->
+        <div class="text-center lg:text-left">
+          <span class="inline-flex items-center gap-2 rounded-full border border-acento/30 bg-acento/10 px-3 py-1 text-xs font-semibold text-acento">
+            <span class="h-1.5 w-1.5 rounded-full bg-acento"></span>
+            Carga · Bienestar · Lesiones
+          </span>
+          <h1 class="mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.05] tracking-tight">
+            Deja de perseguir datos.
+            <span class="block bg-gradient-to-r from-primario to-acento bg-clip-text text-transparent">Empieza a entrenar mejor.</span>
+          </h1>
+          <p class="mt-6 text-lg text-texto-2 max-w-xl mx-auto lg:mx-0">
+            CargIA centraliza la carga, el bienestar y las lesiones de tus deportistas en tiempo real. Sin Excels. Sin WhatsApps.
+          </p>
+          <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <a href="https://cargia.app"
+               class="inline-flex items-center justify-center rounded-xl bg-acento px-7 py-3.5 text-base font-semibold text-fondo shadow-lg shadow-acento/20 hover:bg-emerald-400 transition-colors">
+              Empieza gratis
+            </a>
+            <a href="#como-funciona"
+               class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-7 py-3.5 text-base font-semibold text-texto-1 hover:bg-white/5 transition-colors">
+              Ver cómo funciona
+              <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M8 13l4-4M8 13l-4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Columna ilustración (SVG hero inline) -->
+        <div class="w-full max-w-2xl mx-auto lg:max-w-none">
+          <div class="rounded-2xl border border-white/10 bg-superficie/40 p-2 shadow-2xl shadow-primario/10">
+            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 800 500" role="img" aria-labelledby="hero-title" class="w-full h-auto rounded-xl">
+              <title id="hero-title">Panel de CargIA mostrando gráfico ACWR, valor RPE y bienestar del deportista</title>
+              <defs>
+                <style>
+                  .hero-bg        { fill: #0F172A; }
+                  .hero-card      { fill: #1E293B; }
+                  .hero-card-alt  { fill: #162032; }
+                  .hero-primario  { fill: #1E40AF; }
+                  .hero-acento    { fill: #10B981; }
+                  .hero-texto     { fill: #F8FAFC; font-family: Inter, sans-serif; }
+                  .hero-secundario{ fill: #94A3B8; font-family: Inter, sans-serif; }
+                  .hero-border    { fill: none; stroke: #1E40AF; stroke-width: 1; opacity: 0.4; }
+                  .hero-naranja   { fill: #F59E0B; }
+                  .hero-rojo      { fill: #EF4444; }
+                  .hero-azul-claro{ fill: #3B82F6; }
+                </style>
+                <linearGradient id="hero-grad-bar1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#1E40AF"/>
+                  <stop offset="100%" stop-color="#1E40AF" stop-opacity="0.5"/>
+                </linearGradient>
+                <linearGradient id="hero-grad-bar2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#10B981"/>
+                  <stop offset="100%" stop-color="#10B981" stop-opacity="0.5"/>
+                </linearGradient>
+                <linearGradient id="hero-grad-rpe" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#1E40AF"/>
+                  <stop offset="100%" stop-color="#10B981"/>
+                </linearGradient>
+                <linearGradient id="hero-grad-ring" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#10B981"/>
+                  <stop offset="100%" stop-color="#3B82F6"/>
+                </linearGradient>
+                <clipPath id="hero-clip-main">
+                  <rect x="0" y="0" width="800" height="500" rx="0"/>
+                </clipPath>
+                <radialGradient id="hero-glow-rpe" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#1E40AF" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#1E40AF" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="hero-glow-well" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#10B981" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <rect width="800" height="500" class="hero-bg"/>
+              <g opacity="0.06" stroke="#94A3B8" stroke-width="0.5" fill="none">
+                <line x1="0" y1="80"  x2="800" y2="80"/>
+                <line x1="0" y1="160" x2="800" y2="160"/>
+                <line x1="0" y1="240" x2="800" y2="240"/>
+                <line x1="0" y1="320" x2="800" y2="320"/>
+                <line x1="0" y1="400" x2="800" y2="400"/>
+                <line x1="80"  y1="0" x2="80"  y2="500"/>
+                <line x1="160" y1="0" x2="160" y2="500"/>
+                <line x1="240" y1="0" x2="240" y2="500"/>
+                <line x1="320" y1="0" x2="320" y2="500"/>
+                <line x1="400" y1="0" x2="400" y2="500"/>
+                <line x1="480" y1="0" x2="480" y2="500"/>
+                <line x1="560" y1="0" x2="560" y2="500"/>
+                <line x1="640" y1="0" x2="640" y2="500"/>
+                <line x1="720" y1="0" x2="720" y2="500"/>
+              </g>
+              <rect x="0" y="0" width="800" height="52" fill="#0F172A"/>
+              <rect x="0" y="51" width="800" height="1" fill="#1E40AF" opacity="0.3"/>
+              <rect x="24" y="14" width="28" height="24" rx="5" fill="#1E40AF"/>
+              <text x="38" y="30" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#F8FAFC" text-anchor="middle">CA</text>
+              <text x="62" y="31" font-family="Inter, sans-serif" font-size="13" font-weight="700" fill="#F8FAFC">CargIA</text>
+              <rect x="200" y="16" width="70" height="20" rx="10" fill="#1E40AF" opacity="0.9"/>
+              <text x="235" y="30" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC" text-anchor="middle">Carga</text>
+              <text x="295" y="31" font-family="Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">Bienestar</text>
+              <text x="360" y="31" font-family="Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">Lesiones</text>
+              <circle cx="762" cy="26" r="14" fill="#1E293B"/>
+              <circle cx="762" cy="22" r="6" fill="#94A3B8"/>
+              <ellipse cx="762" cy="36" rx="10" ry="6" fill="#94A3B8"/>
+              <rect x="24" y="68" width="440" height="280" rx="12" class="hero-card"/>
+              <rect x="24" y="68" width="440" height="280" rx="12" class="hero-border" stroke="#1E40AF" stroke-width="1" opacity="0.3"/>
+              <text x="44" y="92" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#94A3B8">ACWR — Carga aguda:crónica</text>
+              <rect x="370" y="78" width="78" height="18" rx="9" fill="#1E40AF" opacity="0.25"/>
+              <text x="409" y="90" font-family="Inter, sans-serif" font-size="10" fill="#3B82F6" text-anchor="middle">Equipo A</text>
+              <rect x="48" y="116" width="396" height="56" rx="4" fill="#10B981" opacity="0.08"/>
+              <text x="448" y="130" font-family="Inter, sans-serif" font-size="9" fill="#10B981" text-anchor="end" opacity="0.7">1.3 óptimo</text>
+              <text x="448" y="175" font-family="Inter, sans-serif" font-size="9" fill="#10B981" text-anchor="end" opacity="0.7">0.8</text>
+              <line x1="48" y1="144" x2="444" y2="144" stroke="#10B981" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+              <text x="45" y="119" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="end">1.6</text>
+              <text x="45" y="144" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="end">1.0</text>
+              <text x="45" y="175" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="end">0.8</text>
+              <text x="45" y="225" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="end">0.0</text>
+              <line x1="48" y1="228" x2="444" y2="228" stroke="#1E40AF" stroke-width="1" opacity="0.3"/>
+              <rect x="55"  y="179" width="30" height="49" rx="3" fill="#3B82F6" opacity="0.8"/>
+              <rect x="95"  y="154" width="30" height="74" rx="3" fill="url(#hero-grad-bar2)" opacity="0.9"/>
+              <rect x="135" y="140" width="30" height="88" rx="3" fill="url(#hero-grad-bar2)" opacity="0.9"/>
+              <rect x="175" y="122" width="30" height="106" rx="3" fill="#F59E0B" opacity="0.85"/>
+              <rect x="215" y="151" width="30" height="77" rx="3" fill="url(#hero-grad-bar2)" opacity="0.9"/>
+              <rect x="255" y="165" width="30" height="63" rx="3" fill="url(#hero-grad-bar2)" opacity="0.9"/>
+              <rect x="295" y="109" width="30" height="119" rx="3" fill="#EF4444" opacity="0.85"/>
+              <rect x="335" y="140" width="30" height="88" rx="3" fill="url(#hero-grad-bar2)" opacity="0.9"/>
+              <rect x="375" y="168" width="30" height="60" rx="3" fill="url(#hero-grad-bar2)" opacity="0.9"/>
+              <rect x="415" y="133" width="30" height="95" rx="3" fill="#F59E0B" opacity="0.85"/>
+              <polyline points="70,186 110,157 150,143 190,125 230,154 270,168 310,112 350,143 390,171 430,136"
+                fill="none" stroke="#F8FAFC" stroke-width="2" stroke-linejoin="round" opacity="0.5"/>
+              <circle cx="70"  cy="186" r="3" fill="#F8FAFC" opacity="0.7"/>
+              <circle cx="110" cy="157" r="3" fill="#F8FAFC" opacity="0.7"/>
+              <circle cx="150" cy="143" r="3" fill="#F8FAFC" opacity="0.7"/>
+              <circle cx="190" cy="125" r="3" fill="#F59E0B"/>
+              <circle cx="230" cy="154" r="3" fill="#F8FAFC" opacity="0.7"/>
+              <circle cx="270" cy="168" r="3" fill="#F8FAFC" opacity="0.7"/>
+              <circle cx="310" cy="112" r="5" fill="#EF4444"/>
+              <circle cx="350" cy="143" r="3" fill="#F8FAFC" opacity="0.7"/>
+              <circle cx="390" cy="171" r="3" fill="#F8FAFC" opacity="0.7"/>
+              <circle cx="430" cy="136" r="3" fill="#F59E0B"/>
+              <text x="70"  y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#94A3B8" text-anchor="middle">MRC</text>
+              <text x="110" y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#94A3B8" text-anchor="middle">LUC</text>
+              <text x="150" y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#94A3B8" text-anchor="middle">DIE</text>
+              <text x="190" y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#F59E0B" text-anchor="middle">SAR</text>
+              <text x="230" y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#94A3B8" text-anchor="middle">JAV</text>
+              <text x="270" y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#94A3B8" text-anchor="middle">ANA</text>
+              <text x="310" y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#EF4444" text-anchor="middle">ROB</text>
+              <text x="350" y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#94A3B8" text-anchor="middle">PAB</text>
+              <text x="390" y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#94A3B8" text-anchor="middle">IRE</text>
+              <text x="430" y="241" font-family="Inter, sans-serif" font-size="8.5" fill="#F59E0B" text-anchor="middle">TOM</text>
+              <rect x="48"  y="258" width="10" height="10" rx="2" fill="#3B82F6"/>
+              <text x="63"  y="267" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8">&lt;0.8 Bajo</text>
+              <rect x="118" y="258" width="10" height="10" rx="2" fill="#10B981"/>
+              <text x="133" y="267" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8">Óptimo</text>
+              <rect x="185" y="258" width="10" height="10" rx="2" fill="#F59E0B"/>
+              <text x="200" y="267" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8">Elevado</text>
+              <rect x="255" y="258" width="10" height="10" rx="2" fill="#EF4444"/>
+              <text x="270" y="267" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8">Alto riesgo</text>
+              <rect x="480" y="68" width="148" height="148" rx="12" class="hero-card"/>
+              <rect x="480" y="68" width="148" height="148" rx="12" fill="none" stroke="#1E40AF" stroke-width="1" opacity="0.3"/>
+              <ellipse cx="554" cy="148" rx="60" ry="55" fill="url(#hero-glow-rpe)"/>
+              <text x="554" y="96" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="middle">RPE medio hoy</text>
+              <text x="554" y="160" font-family="Inter, sans-serif" font-size="64" font-weight="800" fill="#F8FAFC" text-anchor="middle" dominant-baseline="auto">7</text>
+              <text x="554" y="176" font-family="Inter, sans-serif" font-size="11" fill="#94A3B8" text-anchor="middle">de 10</text>
+              <rect x="498" y="190" width="112" height="7" rx="3.5" fill="#1E293B"/>
+              <rect x="498" y="190" width="78" height="7" rx="3.5" fill="url(#hero-grad-rpe)"/>
+              <text x="498" y="207" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8">0</text>
+              <text x="606" y="207" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="end">10</text>
+              <rect x="640" y="68" width="136" height="148" rx="12" class="hero-card"/>
+              <rect x="640" y="68" width="136" height="148" rx="12" fill="none" stroke="#10B981" stroke-width="1" opacity="0.3"/>
+              <ellipse cx="708" cy="148" rx="50" ry="50" fill="url(#hero-glow-well)"/>
+              <text x="708" y="96" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="middle">Bienestar</text>
+              <circle cx="708" cy="148" r="40" fill="none" stroke="#1E293B" stroke-width="8"/>
+              <circle cx="708" cy="148" r="40" fill="none" stroke="url(#hero-grad-ring)" stroke-width="8"
+                stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="55.3" transform="rotate(-90 708 148)"/>
+              <text x="708" y="144" font-family="Inter, sans-serif" font-size="22" font-weight="800" fill="#F8FAFC" text-anchor="middle">78</text>
+              <text x="708" y="160" font-family="Inter, sans-serif" font-size="10" fill="#10B981" text-anchor="middle">BUENO</text>
+              <text x="708" y="200" font-family="Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">19.5 / 25 pts</text>
+              <rect x="480" y="228" width="296" height="120" rx="12" class="hero-card"/>
+              <rect x="480" y="228" width="296" height="120" rx="12" fill="none" stroke="#1E40AF" stroke-width="1" opacity="0.2"/>
+              <text x="500" y="250" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#94A3B8">Métricas de carga — semana actual</text>
+              <text x="534" y="285" font-family="Inter, sans-serif" font-size="11" fill="#94A3B8" text-anchor="middle">Aguda 7d</text>
+              <text x="534" y="308" font-family="Inter, sans-serif" font-size="24" font-weight="700" fill="#3B82F6" text-anchor="middle">342</text>
+              <text x="534" y="324" font-family="Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">UA</text>
+              <line x1="608" y1="268" x2="608" y2="338" stroke="#1E40AF" stroke-width="1" opacity="0.25"/>
+              <text x="648" y="285" font-family="Inter, sans-serif" font-size="11" fill="#94A3B8" text-anchor="middle">Crónica 28d</text>
+              <text x="648" y="308" font-family="Inter, sans-serif" font-size="24" font-weight="700" fill="#10B981" text-anchor="middle">318</text>
+              <text x="648" y="324" font-family="Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">UA / sem</text>
+              <line x1="722" y1="268" x2="722" y2="338" stroke="#1E40AF" stroke-width="1" opacity="0.25"/>
+              <text x="756" y="285" font-family="Inter, sans-serif" font-size="11" fill="#94A3B8" text-anchor="middle">ACWR</text>
+              <text x="756" y="308" font-family="Inter, sans-serif" font-size="24" font-weight="700" fill="#10B981" text-anchor="middle">1.08</text>
+              <rect x="728" y="328" width="56" height="14" rx="7" fill="#10B981" opacity="0.2"/>
+              <text x="756" y="338" font-family="Inter, sans-serif" font-size="9" fill="#10B981" text-anchor="middle">OPTIMO</text>
+              <rect x="24" y="364" width="440" height="116" rx="12" class="hero-card"/>
+              <rect x="24" y="364" width="440" height="116" rx="12" fill="none" stroke="#1E40AF" stroke-width="1" opacity="0.2"/>
+              <text x="44" y="385" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#94A3B8">Estado del equipo</text>
+              <text x="64"  y="402" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8">Deportista</text>
+              <text x="198" y="402" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="middle">Carga</text>
+              <text x="278" y="402" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="middle">ACWR</text>
+              <text x="358" y="402" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="middle">Bienestar</text>
+              <text x="432" y="402" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="middle">RPE</text>
+              <line x1="44" y1="406" x2="450" y2="406" stroke="#1E40AF" stroke-width="1" opacity="0.2"/>
+              <circle cx="52" cy="420" r="6" fill="#1E40AF"/>
+              <text x="52" y="424" font-family="Inter, sans-serif" font-size="7" fill="#F8FAFC" text-anchor="middle">M</text>
+              <text x="64"  y="424" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC">Marcos R.</text>
+              <text x="198" y="424" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC" text-anchor="middle">380 UA</text>
+              <rect x="256" y="415" width="44" height="14" rx="7" fill="#F59E0B" opacity="0.2"/>
+              <text x="278" y="424" font-family="Inter, sans-serif" font-size="10" fill="#F59E0B" text-anchor="middle">1.45</text>
+              <text x="358" y="424" font-family="Inter, sans-serif" font-size="10" fill="#10B981" text-anchor="middle">18 pts</text>
+              <text x="432" y="424" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC" text-anchor="middle">7</text>
+              <circle cx="52" cy="442" r="6" fill="#EF4444" opacity="0.8"/>
+              <text x="52" y="446" font-family="Inter, sans-serif" font-size="7" fill="#F8FAFC" text-anchor="middle">R</text>
+              <text x="64"  y="446" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC">Roberto K.</text>
+              <text x="198" y="446" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC" text-anchor="middle">412 UA</text>
+              <rect x="256" y="437" width="44" height="14" rx="7" fill="#EF4444" opacity="0.2"/>
+              <text x="278" y="446" font-family="Inter, sans-serif" font-size="10" fill="#EF4444" text-anchor="middle">1.70</text>
+              <text x="358" y="446" font-family="Inter, sans-serif" font-size="10" fill="#F59E0B" text-anchor="middle">14 pts</text>
+              <text x="432" y="446" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC" text-anchor="middle">8</text>
+              <circle cx="52" cy="464" r="6" fill="#10B981" opacity="0.8"/>
+              <text x="52" y="468" font-family="Inter, sans-serif" font-size="7" fill="#F8FAFC" text-anchor="middle">L</text>
+              <text x="64"  y="468" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC">Lucía M.</text>
+              <text x="198" y="468" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC" text-anchor="middle">295 UA</text>
+              <rect x="256" y="459" width="44" height="14" rx="7" fill="#10B981" opacity="0.2"/>
+              <text x="278" y="468" font-family="Inter, sans-serif" font-size="10" fill="#10B981" text-anchor="middle">1.05</text>
+              <text x="358" y="468" font-family="Inter, sans-serif" font-size="10" fill="#10B981" text-anchor="middle">21 pts</text>
+              <text x="432" y="468" font-family="Inter, sans-serif" font-size="10" fill="#F8FAFC" text-anchor="middle">6</text>
+              <text x="776" y="488" font-family="Inter, sans-serif" font-size="9" fill="#94A3B8" text-anchor="end" opacity="0.5">25 jun 2026</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================== 2. EL PROBLEMA ====================== -->
+    <section id="problema" class="mx-auto max-w-6xl px-5 sm:px-8 py-16 md:py-24">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">¿Te suena esto?</h2>
+        <p class="mt-4 text-texto-2">La gestión manual te roba tiempo y te deja sin datos cuando más los necesitas.</p>
+      </div>
+
+      <div class="mt-12 grid gap-6 md:grid-cols-3">
+        <!-- Tarjeta problema 1 -->
+        <article class="rounded-2xl border border-white/10 bg-superficie/60 p-7 hover:border-white/20 transition-colors">
+          <div class="h-16 w-16">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img" aria-labelledby="excel-title" class="w-full h-auto">
+              <title id="excel-title">Hoja de cálculo con datos desconocidos</title>
+              <defs>
+                <style>
+                  .excel-fondo  { fill: #1E293B; }
+                  .excel-doc    { fill: #334155; stroke: #F8FAFC; stroke-width: 2; }
+                  .excel-dato   { fill: #64748B; }
+                  .excel-vacio  { fill: #475569; }
+                  .excel-badge  { fill: #F59E0B; }
+                  .excel-q      { fill: #1E293B; }
+                </style>
+              </defs>
+              <!-- Fondo -->
+              <rect width="64" height="64" rx="14" class="excel-fondo"/>
+              <!-- Documento con esquina doblada -->
+              <path d="M14 10 H38 L46 18 V54 H14 Z" class="excel-doc"/>
+              <!-- Pliegue esquina -->
+              <path d="M38 10 L38 18 L46 18" fill="none" stroke="#F8FAFC" stroke-width="1.5"/>
+              <!-- Fila datos 1 -->
+              <rect x="18" y="23" width="24" height="4" rx="1" class="excel-dato"/>
+              <!-- Fila datos 2 -->
+              <rect x="18" y="31" width="20" height="4" rx="1" class="excel-dato"/>
+              <!-- Fila vacía (tenue) -->
+              <rect x="18" y="39" width="18" height="4" rx="1" class="excel-vacio" opacity="0.6"/>
+              <!-- Badge círculo amarillo -->
+              <circle cx="46" cy="50" r="8" class="excel-badge"/>
+              <!-- Signo "?" como path vectorial -->
+              <path d="M44.3 46.5 Q44.3 44.8 46 44.8 Q47.7 44.8 47.7 46.5 Q47.7 47.6 46 48.3 L46 49.2" fill="none" stroke="#1E293B" stroke-width="1.8" stroke-linecap="round"/>
+              <circle cx="46" cy="50.8" r="0.9" fill="#1E293B"/>
+            </svg>
+          </div>
+          <p class="mt-5 text-lg font-medium leading-snug">
+            Cada lunes mandas un Excel a 15 deportistas esperando que alguien lo rellene
+          </p>
+        </article>
+
+        <!-- Tarjeta problema 2 -->
+        <article class="rounded-2xl border border-white/10 bg-superficie/60 p-7 hover:border-white/20 transition-colors">
+          <div class="h-16 w-16">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img" aria-labelledby="dep-title" class="w-full h-auto">
+              <title id="dep-title">Silueta de deportista con interrogante</title>
+              <defs>
+                <style>
+                  .dep-fondo    { fill: #1E293B; }
+                  .dep-silueta  { fill: #94A3B8; }
+                  .dep-q        { fill: none; stroke: #F8FAFC; stroke-width: 2.5; stroke-linecap: round; }
+                  .dep-qdot     { fill: #F8FAFC; }
+                </style>
+              </defs>
+              <!-- Fondo -->
+              <rect width="64" height="64" rx="14" class="dep-fondo"/>
+              <!-- Cabeza (círculo) -->
+              <circle cx="24" cy="18" r="7" class="dep-silueta"/>
+              <!-- Cuerpo (trapecio: hombros anchos, base algo más estrecha) -->
+              <path d="M12 52 Q12 36 17 33 L24 31 L31 33 Q36 36 36 52 Z" class="dep-silueta"/>
+              <!-- Signo "?" — arco superior -->
+              <path d="M42 21 Q42 16 47 16 Q52 16 52 21 Q52 25 47 27 L47 31" class="dep-q"/>
+              <!-- Punto del "?" -->
+              <circle cx="47" cy="35" r="1.8" class="dep-qdot"/>
+            </svg>
+          </div>
+          <p class="mt-5 text-lg font-medium leading-snug">
+            No sabes si tu deportista llega a la sesión cargado o descansado hasta que lo ves
+          </p>
+        </article>
+
+        <!-- Tarjeta problema 3 -->
+        <article class="rounded-2xl border border-white/10 bg-superficie/60 p-7 hover:border-white/20 transition-colors">
+          <div class="h-16 w-16">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img" aria-labelledby="lesion-title" class="w-full h-auto">
+              <title id="lesion-title">Alerta de lesión con cruz médica</title>
+              <defs>
+                <style>
+                  .les-fondo     { fill: #1E293B; }
+                  .les-triangulo { fill: #EF4444; }
+                  .les-excl      { fill: #1E293B; }
+                  .les-cruz      { fill: #F8FAFC; }
+                </style>
+              </defs>
+              <!-- Fondo -->
+              <rect width="64" height="64" rx="14" class="les-fondo"/>
+              <!-- Triángulo de alerta -->
+              <path d="M32 10 L56 50 H8 Z" class="les-triangulo"/>
+              <!-- Exclamación — barra -->
+              <rect x="30" y="24" width="4" height="14" rx="2" class="les-excl"/>
+              <!-- Exclamación — punto -->
+              <circle cx="32" cy="43" r="2.2" class="les-excl"/>
+              <!-- Cruz médica superpuesta (zona inferior-derecha interior del triángulo) -->
+              <rect x="37" y="40" width="14" height="5" rx="2" class="les-cruz"/>
+              <rect x="41.5" y="35.5" width="5" height="14" rx="2" class="les-cruz"/>
+            </svg>
+          </div>
+          <p class="mt-5 text-lg font-medium leading-snug">
+            Cuando aparece una lesión, no tienes datos para saber si la viste venir
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ====================== 3. CÓMO FUNCIONA ====================== -->
+    <section id="como-funciona" class="bg-superficie/30 border-y border-white/5">
+      <div class="mx-auto max-w-6xl px-5 sm:px-8 py-16 md:py-24">
+        <div class="text-center max-w-2xl mx-auto">
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Tres pasos. Sin fricción.</h2>
+          <p class="mt-4 text-texto-2">De la planificación al dato accionable, sin salir de la app.</p>
+        </div>
+
+        <div class="mt-14 grid gap-8 md:grid-cols-3">
+          <!-- Paso 1 -->
+          <article class="relative rounded-2xl border border-white/10 bg-fondo/60 p-7">
+            <span class="absolute -top-5 left-7 text-6xl font-extrabold text-primario/30 select-none" aria-hidden="true">1</span>
+            <div class="relative h-16 w-16 ml-auto md:ml-0">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img" aria-labelledby="cal-title" class="w-full h-auto">
+                <title id="cal-title">Calendario con sesión marcada</title>
+                <defs>
+                  <style>
+                    .cal-fondo    { fill: #1E293B; }
+                    .cal-cuerpo   { fill: #1E3A5F; stroke: #F8FAFC; stroke-width: 1.5; }
+                    .cal-cabecera { fill: #1E40AF; }
+                    .cal-linea    { stroke: #475569; stroke-width: 1.2; }
+                    .cal-hoy      { fill: #1E40AF; }
+                  </style>
+                </defs>
+                <!-- Fondo -->
+                <rect width="64" height="64" rx="14" class="cal-fondo"/>
+                <!-- Cuerpo calendario -->
+                <rect x="10" y="16" width="44" height="38" rx="3" class="cal-cuerpo"/>
+                <!-- Cabecera -->
+                <rect x="10" y="16" width="44" height="11" rx="3" class="cal-cabecera"/>
+                <!-- Tapa inferior de la cabecera (para que el rx no aparezca abajo) -->
+                <rect x="10" y="22" width="44" height="5" class="cal-cabecera"/>
+                <!-- Divisores horizontales (filas de días) -->
+                <line x1="10" y1="36" x2="54" y2="36" class="cal-linea"/>
+                <line x1="10" y1="45" x2="54" y2="45" class="cal-linea"/>
+                <!-- Divisores verticales (columnas días) -->
+                <line x1="25" y1="27" x2="25" y2="54" class="cal-linea"/>
+                <line x1="40" y1="27" x2="40" y2="54" class="cal-linea"/>
+                <!-- Círculo "hoy" marcado — celda central fila 1 -->
+                <circle cx="32" cy="31" r="5" class="cal-hoy"/>
+              </svg>
+            </div>
+            <h3 class="relative mt-5 text-xl font-bold">El coach crea la sesión</h3>
+            <p class="relative mt-2 text-texto-2">Define el entrenamiento del día en segundos.</p>
+          </article>
+
+          <!-- Paso 2 -->
+          <article class="relative rounded-2xl border border-white/10 bg-fondo/60 p-7">
+            <span class="absolute -top-5 left-7 text-6xl font-extrabold text-acento/30 select-none" aria-hidden="true">2</span>
+            <div class="relative h-16 w-16 ml-auto md:ml-0">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img" aria-labelledby="movil-title" class="w-full h-auto">
+                <title id="movil-title">Móvil mostrando RPE 7</title>
+                <defs>
+                  <style>
+                    .mov-fondo    { fill: #1E293B; }
+                    .mov-cuerpo   { fill: #334155; stroke: #F8FAFC; stroke-width: 2; }
+                    .mov-pantalla { fill: #0F172A; }
+                    .mov-notch    { fill: #1E293B; }
+                    .mov-numero   { font-family: Inter, sans-serif; font-size: 26px; font-weight: 700;
+                                    fill: #10B981; text-anchor: middle; dominant-baseline: central; }
+                  </style>
+                </defs>
+                <!-- Fondo -->
+                <rect width="64" height="64" rx="14" class="mov-fondo"/>
+                <!-- Cuerpo del móvil -->
+                <rect x="16" y="8" width="32" height="48" rx="5" class="mov-cuerpo"/>
+                <!-- Pantalla -->
+                <rect x="19" y="16" width="26" height="34" rx="2" class="mov-pantalla"/>
+                <!-- Notch (cámara) -->
+                <rect x="27" y="11" width="10" height="3" rx="1.5" class="mov-notch"/>
+                <!-- Número 7 — única excepción de <text> permitida -->
+                <text x="32" y="34" class="mov-numero">7</text>
+              </svg>
+            </div>
+            <h3 class="relative mt-5 text-xl font-bold">El deportista registra su RPE</h3>
+            <p class="relative mt-2 text-texto-2">Un número del 0 al 10 en 10 segundos desde el móvil.</p>
+          </article>
+
+          <!-- Paso 3 -->
+          <article class="relative rounded-2xl border border-white/10 bg-fondo/60 p-7">
+            <span class="absolute -top-5 left-7 text-6xl font-extrabold text-primario/30 select-none" aria-hidden="true">3</span>
+            <div class="relative h-16 w-16 ml-auto md:ml-0">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 64 64" role="img" aria-labelledby="tend-title" class="w-full h-auto">
+                <title id="tend-title">Gráfico de tendencia ascendente</title>
+                <defs>
+                  <style>
+                    .tend-fondo   { fill: #1E293B; }
+                    .tend-linea   { fill: none; stroke: #F8FAFC; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+                    .tend-punto   { fill: #F8FAFC; }
+                    .tend-final   { fill: #10B981; }
+                  </style>
+                </defs>
+                <!-- Fondo -->
+                <rect width="64" height="64" rx="14" class="tend-fondo"/>
+                <!-- Línea ascendente -->
+                <polyline points="12,48 24,40 34,30 44,22 52,14" class="tend-linea"/>
+                <!-- Puntos de la línea -->
+                <circle cx="12" cy="48" r="3" class="tend-punto"/>
+                <circle cx="24" cy="40" r="3" class="tend-punto"/>
+                <circle cx="34" cy="30" r="3" class="tend-punto"/>
+                <circle cx="44" cy="22" r="3" class="tend-punto"/>
+                <!-- Punto final destacado -->
+                <circle cx="52" cy="14" r="5.5" class="tend-final"/>
+              </svg>
+            </div>
+            <h3 class="relative mt-5 text-xl font-bold">El coach ve la carga en tiempo real</h3>
+            <p class="relative mt-2 text-texto-2">ACWR, bienestar y alertas de sobrecarga automáticas.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================== 4. TRES PILARES ====================== -->
+    <section id="pilares" class="mx-auto max-w-6xl px-5 sm:px-8 py-16 md:py-24">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Todo lo que necesitas. En un solo lugar.</h2>
+        <p class="mt-4 text-texto-2">Tres pilares conectados para una lectura completa del estado de tus deportistas.</p>
+      </div>
+
+      <div class="mt-14 grid gap-8 md:grid-cols-3">
+        <!-- Pilar Carga -->
+        <article class="rounded-2xl border border-white/10 bg-superficie/60 p-8 text-center md:text-left hover:border-primario/40 transition-colors">
+          <div class="mx-auto md:mx-0 w-28 h-28">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 128 128" role="img" aria-labelledby="pilarCarga-title" class="w-full h-auto">
+              <title id="pilarCarga-title">Histograma de carga de entrenamiento</title>
+              <defs>
+                <style>
+                  .carga-fondo  { fill: #1E293B; }
+                  .carga-azul   { fill: #1E40AF; }
+                  .carga-alerta { fill: #F59E0B; }
+                </style>
+              </defs>
+              <!-- Fondo -->
+              <rect width="128" height="128" rx="20" class="carga-fondo"/>
+              <!-- 5 barras verticales de izquierda a derecha, alturas progresivas -->
+              <!-- Barra 1 — azul, altura 30 -->
+              <rect x="18" y="84" width="16" height="30" rx="3" class="carga-azul"/>
+              <!-- Barra 2 — azul, altura 46 -->
+              <rect x="38" y="68" width="16" height="46" rx="3" class="carga-azul"/>
+              <!-- Barra 3 — azul, altura 58 -->
+              <rect x="58" y="56" width="16" height="58" rx="3" class="carga-azul"/>
+              <!-- Barra 4 — azul, altura 68 -->
+              <rect x="78" y="46" width="16" height="68" rx="3" class="carga-azul"/>
+              <!-- Barra 5 — naranja (sobrecarga), la más alta, altura 84 -->
+              <rect x="94" y="30" width="16" height="84" rx="3" class="carga-alerta"/>
+            </svg>
+          </div>
+          <h3 class="mt-6 text-2xl font-bold">Carga</h3>
+          <p class="mt-3 text-texto-2 leading-relaxed">
+            sRPE (RPE Borg × minutos) y ACWR (ratio aguda:crónica). Detecta sobrecargas antes de que ocurran.
+          </p>
+        </article>
+
+        <!-- Pilar Bienestar -->
+        <article class="rounded-2xl border border-white/10 bg-superficie/60 p-8 text-center md:text-left hover:border-acento/40 transition-colors">
+          <div class="mx-auto md:mx-0 w-28 h-28">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 128 128" role="img" aria-labelledby="pilarBien-title" class="w-full h-auto">
+              <title id="pilarBien-title">Anillo de progreso de bienestar con checkmark</title>
+              <defs>
+                <style>
+                  .bien-fondo  { fill: #1E293B; }
+                  .bien-pista  { fill: none; stroke: #334155; stroke-width: 10; }
+                  .bien-arco   { fill: none; stroke: #10B981; stroke-width: 10;
+                                 stroke-linecap: round; stroke-dasharray: 188 251;
+                                 transform-origin: 64px 64px; transform: rotate(-90deg); }
+                  .bien-check  { fill: none; stroke: #F8FAFC; stroke-width: 8;
+                                 stroke-linecap: round; stroke-linejoin: round; }
+                </style>
+              </defs>
+              <!-- Fondo -->
+              <rect width="128" height="128" rx="20" class="bien-fondo"/>
+              <!-- Pista del anillo (fondo gris) -->
+              <circle cx="64" cy="64" r="40" class="bien-pista"/>
+              <!-- Arco de progreso (~75% lleno) -->
+              <circle cx="64" cy="64" r="40" class="bien-arco"/>
+              <!-- Checkmark vectorial -->
+              <path d="M44 64 L57 77 L84 50" class="bien-check"/>
+            </svg>
+          </div>
+          <h3 class="mt-6 text-2xl font-bold">Bienestar</h3>
+          <p class="mt-3 text-texto-2 leading-relaxed">
+            Check-in matinal tipo Hooper: sueño, fatiga, agujetas, estrés y ánimo. Índice de disponibilidad automático.
+          </p>
+        </article>
+
+        <!-- Pilar Lesiones -->
+        <article class="rounded-2xl border border-white/10 bg-superficie/60 p-8 text-center md:text-left hover:border-primario/40 transition-colors">
+          <div class="mx-auto md:mx-0 w-28 h-28">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 128 128" role="img" aria-labelledby="pilarLes-title" class="w-full h-auto">
+              <title id="pilarLes-title">Escudo de protección con cruz médica</title>
+              <defs>
+                <style>
+                  .les2-fondo   { fill: #1E293B; }
+                  .les2-escudo  { fill: #1E3A6E; stroke: #1E40AF; stroke-width: 3; }
+                  .les2-cruz    { fill: #EF4444; }
+                </style>
+              </defs>
+              <!-- Fondo -->
+              <rect width="128" height="128" rx="20" class="les2-fondo"/>
+              <!-- Escudo -->
+              <path d="M64 18 L100 30 L100 68 Q100 95 64 112 Q28 95 28 68 L28 30 Z" class="les2-escudo"/>
+              <!-- Cruz médica — barra horizontal -->
+              <rect x="48" y="58" width="32" height="12" rx="4" class="les2-cruz"/>
+              <!-- Cruz médica — barra vertical -->
+              <rect x="58" y="48" width="12" height="32" rx="4" class="les2-cruz"/>
+            </svg>
+          </div>
+          <h3 class="mt-6 text-2xl font-bold">Lesiones</h3>
+          <p class="mt-3 text-texto-2 leading-relaxed">
+            Registro y seguimiento de lesiones con historial por deportista.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ====================== 5. PARA QUIÉN ES ====================== -->
+    <section id="roles" class="bg-superficie/30 border-y border-white/5">
+      <div class="mx-auto max-w-6xl px-5 sm:px-8 py-16 md:py-24">
+        <div class="text-center max-w-2xl mx-auto">
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Dos roles. Un equipo.</h2>
+          <p class="mt-4 text-texto-2">Cada uno con su vista, trabajando sobre los mismos datos.</p>
+        </div>
+
+        <div class="mt-12 grid gap-6 md:grid-cols-2">
+          <!-- Coach -->
+          <article class="rounded-2xl border border-primario/30 bg-primario/5 p-8">
+            <span class="inline-flex items-center gap-2 rounded-full bg-primario/20 px-3 py-1 text-xs font-semibold text-blue-300">Coach / Preparador físico</span>
+            <h3 class="mt-5 text-2xl font-bold">Tú diriges</h3>
+            <p class="mt-3 text-texto-2 leading-relaxed">
+              Crea equipos, programa sesiones, consulta dashboards, recibe alertas.
+            </p>
+          </article>
+
+          <!-- Deportista -->
+          <article class="rounded-2xl border border-acento/30 bg-acento/5 p-8">
+            <span class="inline-flex items-center gap-2 rounded-full bg-acento/20 px-3 py-1 text-xs font-semibold text-emerald-300">Deportista</span>
+            <h3 class="mt-5 text-2xl font-bold">Tú aportas el dato</h3>
+            <p class="mt-3 text-texto-2 leading-relaxed">
+              Registra RPE tras cada sesión, hace check-in de bienestar, ve su historial de lesiones.
+            </p>
+          </article>
+        </div>
+
+        <div class="mt-10 text-center">
+          <a href="https://cargia.app"
+             class="inline-flex items-center justify-center rounded-xl bg-acento px-7 py-3.5 text-base font-semibold text-fondo shadow-lg shadow-acento/20 hover:bg-emerald-400 transition-colors">
+            Empieza gratis — sin tarjeta de crédito
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================== 6. PRUEBA SOCIAL ====================== -->
+    <section id="testimonios" class="mx-auto max-w-6xl px-5 sm:px-8 py-16 md:py-24">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Lo que dicen los entrenadores</h2>
+      </div>
+
+      <!-- SVG avatar definido una sola vez como símbolo reutilizable (evita IDs duplicados) -->
+      <svg width="0" height="0" class="absolute" aria-hidden="true" focusable="false">
+        <symbol id="avatar-symbol" viewBox="0 0 64 64">
+          <defs>
+            <linearGradient id="avatar-bodyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1E40AF" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#1E40AF" stop-opacity="0.4"/>
+            </linearGradient>
+          </defs>
+          <rect width="64" height="64" rx="32" fill="#1E293B"/>
+          <rect width="64" height="64" rx="32" fill="#1E40AF" opacity="0.12"/>
+          <circle cx="32" cy="22" r="11" fill="#94A3B8" opacity="0.7"/>
+          <ellipse cx="32" cy="54" rx="18" ry="14" fill="#94A3B8" opacity="0.5"/>
+          <circle cx="50" cy="50" r="5" fill="#1E293B"/>
+          <circle cx="50" cy="50" r="5" fill="none" stroke="#10B981" stroke-width="1.5"/>
+          <circle cx="50" cy="50" r="2.5" fill="#10B981"/>
+          <rect width="64" height="64" rx="32" fill="none" stroke="#1E40AF" stroke-width="1.5" opacity="0.5"/>
+        </symbol>
+      </svg>
+
+      <!-- TODO: reemplazar con testimonios reales -->
+      <div class="mt-12 grid gap-6 md:grid-cols-2">
+        <!-- Testimonio 1 -->
+        <figure class="rounded-2xl border border-white/10 bg-superficie/60 p-8">
+          <blockquote class="text-lg leading-relaxed text-texto-1">
+            "Pasé de perseguir un Excel cada semana a tener el estado de todo el equipo de un vistazo. Detectamos dos sobrecargas antes de que fueran lesión."
+          </blockquote>
+          <figcaption class="mt-6 flex items-center gap-4">
+            <svg class="h-12 w-12 rounded-full" viewBox="0 0 64 64" role="img" aria-label="Avatar de Andrés Vidal"><use href="#avatar-symbol"/></svg>
+            <div>
+              <div class="font-semibold">Andrés Vidal</div>
+              <div class="text-sm text-texto-2">Preparador físico · Club de baloncesto</div>
+            </div>
+          </figcaption>
+        </figure>
+
+        <!-- Testimonio 2 -->
+        <figure class="rounded-2xl border border-white/10 bg-superficie/60 p-8">
+          <blockquote class="text-lg leading-relaxed text-texto-1">
+            "Mis deportistas tardan diez segundos en mandar su RPE desde el móvil. La adherencia subió y por fin tengo datos con los que trabajar."
+          </blockquote>
+          <figcaption class="mt-6 flex items-center gap-4">
+            <svg class="h-12 w-12 rounded-full" viewBox="0 0 64 64" role="img" aria-label="Avatar de Marta Ferrer"><use href="#avatar-symbol"/></svg>
+            <div>
+              <div class="font-semibold">Marta Ferrer</div>
+              <div class="text-sm text-texto-2">Entrenadora · Atletismo</div>
+            </div>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ====================== 7. CTA FINAL ====================== -->
+    <section class="bg-primario">
+      <div class="mx-auto max-w-4xl px-5 sm:px-8 py-16 md:py-20 text-center">
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">Empieza a monitorizar hoy</h2>
+        <p class="mt-4 text-lg text-blue-100">Gratis. Sin tarjeta. Sin instalación.</p>
+        <a href="https://cargia.app"
+           class="mt-8 inline-flex items-center justify-center rounded-xl bg-white px-9 py-4 text-lg font-bold text-primario shadow-xl hover:bg-blue-50 transition-colors">
+          Ir a CargIA
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ====================== FOOTER ====================== -->
+  <footer class="border-t border-white/5 bg-fondo">
+    <div class="mx-auto max-w-6xl px-5 sm:px-8 py-12 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+      <!-- Marca -->
+      <div class="flex items-center gap-2.5">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primario font-extrabold text-sm text-texto-1">CA</span>
+        <span class="text-lg font-bold tracking-tight">CargIA</span>
+      </div>
+      <!-- Enlaces -->
+      <nav class="flex flex-wrap items-center gap-x-8 gap-y-3 text-sm text-texto-2" aria-label="Enlaces del pie de página">
+        <a href="https://cargia.app" class="hover:text-texto-1 transition-colors">Inicio</a>
+        <a href="https://cargia.app/conocenos" class="hover:text-texto-1 transition-colors">Conócenos</a>
+        <a href="mailto:info@cargia.app" class="hover:text-texto-1 transition-colors">Contacto</a>
+      </nav>
+    </div>
+    <div class="mx-auto max-w-6xl px-5 sm:px-8 pb-10">
+      <p class="text-xs text-texto-2/70">© 2026 CargIA · Todos los derechos reservados</p>
+    </div>
+  </footer>
+
+</body>
+</html>
