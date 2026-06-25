@@ -77,6 +77,7 @@ const I18N = {
     no_sessions:"No hay sesiones todavía.", no_teams:"Crea primero un equipo con deportistas.",
     results_title:"Carga", athlete_col:"Deportista", load_col:"Carga (últ.)",
     acute:"Aguda (7 d)", chronic:"Crónica (28 d)", acwr:"ACWR", no_data:"Sin datos",
+    trend_load:"Carga por sesión", trend_wellness:"Bienestar por día", trend_window:"Últimos 28 días",
     legend:"Escala ACWR",
     leg_blue:"< 0,8 · baja carga / desentreno", leg_green:"0,8–1,3 · zona óptima",
     leg_orange:"1,3–1,6 · precaución", leg_red:"> 1,6 · riesgo alto",
@@ -123,6 +124,7 @@ const I18N = {
     no_sessions:"No sessions yet.", no_teams:"Create a team with athletes first.",
     results_title:"Load", athlete_col:"Athlete", load_col:"Load (last)",
     acute:"Acute (7 d)", chronic:"Chronic (28 d)", acwr:"ACWR", no_data:"No data",
+    trend_load:"Load per session", trend_wellness:"Wellness per day", trend_window:"Last 28 days",
     legend:"ACWR scale",
     leg_blue:"< 0.8 · undertraining", leg_green:"0.8–1.3 · sweet spot",
     leg_orange:"1.3–1.6 · caution", leg_red:"> 1.6 · high risk",
@@ -233,6 +235,83 @@ function Splash({t}) {
       <div>{t ? t.loading : "Cargando…"}</div>
     </div>
   );
+}
+
+/* ---------------- Sparkline (mini-gráfica SVG dibujada a mano) ----------------
+   Mini-gráfica de evolución reutilizable, sin librerías: solo React.createElement.
+   props:
+     - type: "bar" (barras) | "line" (línea).
+     - data: array de puntos { value:number, color?:string }, ya en orden
+       cronológico (antiguo → izquierda). Se filtran los nulos/indefinidos.
+     - color: color por defecto para puntos sin color propio.
+     - height: alto en px (el ancho es fluido al 100% del contenedor).
+     - empty: texto a mostrar cuando no hay puntos.
+   El SVG usa viewBox + preserveAspectRatio="none" y width:100% para ser fluido
+   y no desbordar la tarjeta. Soporta 1 solo punto sin romperse. */
+function Sparkline({type="bar", data=[], color=C.accent, height=44, empty}) {
+  // Filtramos puntos sin valor numérico válido.
+  const pts = (data||[]).filter(d => d && typeof d.value === "number" && !isNaN(d.value));
+
+  if (pts.length === 0) {
+    return <div style={{color:C.gray, fontSize:12}}>{empty}</div>;
+  }
+
+  // Lienzo en coordenadas internas; el SVG se escala con preserveAspectRatio="none".
+  const W = 240, H = height, pad = 4;
+  // Para barras el eje arranca en 0 (la carga es siempre >= 0); para la línea
+  // ajustamos min/max a los datos para aprovechar todo el alto (scores 5..25).
+  const vals = pts.map(d => d.value);
+  const max = type === "bar" ? Math.max(...vals, 0) : Math.max(...vals);
+  const min = type === "bar" ? Math.min(...vals, 0) : Math.min(...vals);
+  const span = (max - min) || 1; // evita división por cero con valores iguales
+  // Mapea un valor a coordenada Y (mayor valor = más arriba).
+  const yOf = (v) => H - pad - ((v - min) / span) * (H - pad * 2);
+
+  let children;
+  if (type === "bar") {
+    const n = pts.length;
+    const gap = 2;
+    // Ancho de barra: repartido entre todos los puntos, con un máximo de 30px
+    // para que una barra única (n=1) no se vea desproporcionada ocupando casi
+    // todo el ancho del viewBox.
+    const bw = Math.min(30, Math.max(1, (W - pad * 2 - gap * (n - 1)) / n));
+    const base = H - pad; // las barras crecen desde abajo
+    children = pts.map((d, i) => {
+      const x = pad + i * (bw + gap);
+      const y = yOf(d.value);
+      const h = Math.max(1, base - y); // alto mínimo 1px para que se vea
+      return React.createElement("rect", {
+        key:i, x, y, width:bw, height:h, rx:1.5, fill: d.color || color,
+      });
+    });
+  } else {
+    // Línea: une los puntos; además dibuja un círculo por punto (color propio).
+    const n = pts.length;
+    const xOf = (i) => n === 1 ? W / 2 : pad + (i / (n - 1)) * (W - pad * 2);
+    const poly = pts.map((d, i) => `${xOf(i)},${yOf(d.value)}`).join(" ");
+    // Los puntos se dibujan como segmentos de longitud cero con extremo
+    // redondeado: así respetan vectorEffect:"non-scaling-stroke" y NO se
+    // deforman en óvalos al escalar el SVG con preserveAspectRatio="none"
+    // (un <circle> relleno sí se deformaría).
+    children = [
+      React.createElement("polyline", {
+        key:"l", points:poly, fill:"none", stroke:color, strokeWidth:2,
+        strokeLinecap:"round", strokeLinejoin:"round", vectorEffect:"non-scaling-stroke",
+      }),
+      ...pts.map((d, i) => React.createElement("line", {
+        key:"c"+i, x1:xOf(i), y1:yOf(d.value), x2:xOf(i), y2:yOf(d.value),
+        stroke: d.color || color, strokeWidth:5, strokeLinecap:"round",
+        vectorEffect:"non-scaling-stroke",
+      })),
+    ];
+  }
+
+  return React.createElement("svg", {
+    viewBox:`0 0 ${W} ${H}`,
+    preserveAspectRatio:"none",
+    width:"100%", height:H,
+    style:{ display:"block" },
+  }, children);
 }
 
 /* ---------------- App ---------------- */
@@ -739,6 +818,19 @@ function Sessions({t, lang, profile, athletes, teams, sessions, reload}) {
   );
 }
 
+// Devuelve la fecha de corte (hoy - díasAtrás) como string YYYY-MM-DD,
+// comparable directamente con session_date / entry_date (también strings).
+// Se construye en HORA LOCAL (no UTC) para evitar que de madrugada el corte
+// se desplace un día y la ventana pase a ser de 29 días.
+function cutoffDateStr(daysBack){
+  const d = new Date();
+  d.setDate(d.getDate() - daysBack);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function lastLoadFor(sessions, aid){
   let best=null;
   for(const s of sessions){
@@ -759,15 +851,29 @@ function Results({t, lang, athletes, teams, sessions, acwr, reload}) {
 
   const rows = useMemo(()=>{
     if(!team) return [];
+    const cutoff = cutoffDateStr(28);
+    // Sesiones del equipo seleccionado dentro de la ventana de 28 días,
+    // en orden cronológico ascendente (antigua → izquierda).
+    const teamSessions = sessions
+      .filter(s => s.team_id===teamId && s.session_date >= cutoff)
+      .slice()
+      .sort((a,b)=> a.session_date < b.session_date ? -1 : 1);
     return team.memberIds.map(aid=>{
       const a = athletes.find(x=>x.id===aid) || {id:aid, full_name:"—"};
       const m = acwr.find(r=>r.athlete_id===aid && r.team_id===teamId);
       const val = m ? Number(m.acwr) : 0;
       const hasData = !!m && val>0;
+      // Serie de carga interna (rpe×minutes) por sesión, solo RPE entregado.
+      const loadSeries = [];
+      for(const s of teamSessions){
+        const e = (s.session_athletes||[]).find(x=>x.athlete_id===aid && x.rpe!=null);
+        if(e) loadSeries.push({ value: e.rpe * e.minutes });
+      }
       return {
         a, acwr:val, hasData,
         acute: m?Number(m.acute_7d):0, chronic: m?Number(m.chronic_28d):0,
         lastLoad: lastLoadFor(sessions, aid),
+        loadSeries,
       };
     });
   }, [team, teamId, athletes, acwr, sessions]);
@@ -813,6 +919,13 @@ function Results({t, lang, athletes, teams, sessions, acwr, reload}) {
                   </div>
                 ))}
               </div>
+              <div style={{padding:"0 18px 14px"}}>
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6}}>
+                  <span style={{color:C.sub, fontSize:11, fontWeight:600}}>{t.trend_load}</span>
+                  <span style={{color:C.gray, fontSize:10.5}}>{t.trend_window}</span>
+                </div>
+                <Sparkline type="bar" data={r.loadSeries} color={C.blue} height={44} empty={t.no_data}/>
+              </div>
               <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 18px", borderTop:`1px solid ${C.line}`}}>
                 <span style={{color:C.sub, fontSize:13}}>{t.show_acwr_athlete}</span>
                 <Toggle on={!!(aObj && aObj.acwr_visible)} onClick={()=>toggleVis(r.a.id, aObj && aObj.acwr_visible)}/>
@@ -844,6 +957,23 @@ function WellnessCoach({t, lang, athletes, teams, wellness}) {
   const team = teams.find(x=>x.id===teamId);
   const latest = useMemo(()=>latestWellnessByAthlete(wellness), [wellness]);
   const ids = team ? team.memberIds : [];
+
+  // Series de bienestar por deportista: wellness_score por día de los últimos
+  // 28 días, en orden cronológico ascendente, omitiendo días sin entrada.
+  // Color de cada punto según su propio score (wellnessColor).
+  const series = useMemo(()=>{
+    const cutoff = cutoffDateStr(28);
+    const byAthlete = {};
+    const rows = (wellness||[])
+      .filter(w => w.entry_date >= cutoff)
+      .slice()
+      .sort((a,b)=> a.entry_date < b.entry_date ? -1 : 1);
+    for(const w of rows){
+      (byAthlete[w.athlete_id] = byAthlete[w.athlete_id] || [])
+        .push({ value: w.wellness_score, color: wellnessColor(w.wellness_score) });
+    }
+    return byAthlete;
+  }, [wellness]);
 
   return (
     <div>
@@ -883,6 +1013,13 @@ function WellnessCoach({t, lang, athletes, teams, wellness}) {
                   ))}
                 </div>
               )}
+              <div style={{marginTop:12}}>
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6}}>
+                  <span style={{color:C.sub, fontSize:11, fontWeight:600}}>{t.trend_wellness}</span>
+                  <span style={{color:C.gray, fontSize:10.5}}>{t.trend_window}</span>
+                </div>
+                <Sparkline type="line" data={series[aid]||[]} color={C.accent} height={44} empty={t.no_data}/>
+              </div>
             </div>
           );
         })}
