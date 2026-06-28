@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>CargIA · Administración</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0c1322" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" href="../cargia-icon.png" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #0c1322; }
+  body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; color:#eef2fb; }
+  input, select, button { font-family: inherit; }
+</style>
+<!-- Versiones de CDN FIJADAS (mismas que la app de producción) -->
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.27.2/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+/* === Configuración Supabase (misma anon key pública que la app) === */
+const SUPABASE_URL      = "https://beuajnzeduzmkusuyccm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldWFqbnplZHV6bWt1c3V5Y2NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTk0NDYsImV4cCI6MjA5NjU5NTQ0Nn0.bFZUeVO284An23BtuV9so61_Gzy_5iGpik1BTRM9Voo";
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const C = {
+  bg:"#0c1322", panel:"#141d31", panel2:"#1b2740", line:"#27324d", text:"#eef2fb",
+  sub:"#8a96b2", blue:"#3b82f6", brand:"#4f7cff", brandBright:"#1b46ff",
+  green:"#22c55e", orange:"#f59e0b", red:"#ef4444", gray:"#5b6b8c",
+};
+const btn = (bg, extra={}) => ({ background:bg, color:"#fff", border:"none", borderRadius:14,
+  padding:"13px 20px", fontSize:15, fontWeight:700, cursor:"pointer", ...extra });
+const card = { background:C.panel, border:`1px solid ${C.line}`, borderRadius:18, padding:18 };
+const input = { width:"100%", padding:"12px 14px", borderRadius:12, border:`1px solid ${C.line}`,
+  background:C.panel2, color:C.text, fontSize:15, outline:"none" };
+
+/* Invocador de Edge Functions que sabe leer el { error } del cuerpo en respuestas no-2xx */
+async function callFn(name, body) {
+  try {
+    const { data, error } = await db.functions.invoke(name, body ? { body } : {});
+    if (error) {
+      let msg = error.message || "Error de servidor";
+      try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (_) {}
+      return { ok:false, errMsg: msg };
+    }
+    if (data && data.error) return { ok:false, errMsg: data.error };
+    return { ok:true, data };
+  } catch (e) {
+    return { ok:false, errMsg: String((e && e.message) || e) };
+  }
+}
+
+function Field({label, children}) {
+  return (
+    <label style={{display:"block", marginBottom:12}}>
+      <div style={{fontSize:13, color:C.sub, marginBottom:6}}>{label}</div>
+      {children}
+    </label>
+  );
+}
+
+function Login() {
+  const [email, setEmail] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  async function submit(e) {
+    e.preventDefault(); setBusy(true); setErr("");
+    const { error } = await db.auth.signInWithPassword({ email:email.trim(), password:pwd });
+    setBusy(false);
+    if (error) setErr("Correo o contraseña incorrectos");
+  }
+  return (
+    <div style={{minHeight:"100dvh", display:"grid", placeItems:"center", padding:20}}>
+      <form onSubmit={submit} style={{...card, width:"100%", maxWidth:380}}>
+        <div style={{fontFamily:"Sora", fontWeight:800, fontSize:22, marginBottom:4}}>CargIA · Admin</div>
+        <div style={{color:C.sub, fontSize:14, marginBottom:18}}>Panel de administración</div>
+        <Field label="Correo">
+          <input style={input} type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="username" />
+        </Field>
+        <Field label="Contraseña">
+          <input style={input} type="password" value={pwd} onChange={e=>setPwd(e.target.value)} autoComplete="current-password" />
+        </Field>
+        {err && <div style={{color:C.red, fontSize:14, marginBottom:10}}>{err}</div>}
+        <button type="submit" disabled={busy} style={{...btn(C.brand), width:"100%", marginTop:6, opacity:busy?.6:1}}>
+          {busy ? "Entrando…" : "Entrar"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function CreateCoach({onCreated}) {
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({full_name:"", email:"", username:""});
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [cred, setCred] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  async function create() {
+    setBusy(true); setErr("");
+    const r = await callFn("create-coach", { full_name:f.full_name, email:f.email, username:f.username });
+    setBusy(false);
+    if (!r.ok) { setErr(r.errMsg); return; }
+    setCred({ ...r.data.coach, pwd:r.data.password });
+    setF({full_name:"", email:"", username:""}); setOpen(false);
+    onCreated();
+  }
+  function copy() {
+    const txt = `CargIA · Preparador\nCorreo: ${cred.email}\nUsuario: ${cred.username||"—"}\nContraseña temporal: ${cred.pwd}`;
+    if (navigator.clipboard) navigator.clipboard.writeText(txt);
+    setCopied(true); setTimeout(()=>setCopied(false), 1500);
+  }
+
+  return (
+    <div style={{marginBottom:18}}>
+      {!open && !cred && (
+        <button onClick={()=>{setOpen(true); setErr("");}} style={btn(C.brand)}>+ Nuevo preparador</button>
+      )}
+
+      {open && (
+        <div style={{...card, marginTop:4}}>
+          <div style={{fontFamily:"Sora", fontWeight:700, marginBottom:14}}>Nuevo preparador</div>
+          <Field label="Nombre completo">
+            <input style={input} value={f.full_name} onChange={e=>setF({...f, full_name:e.target.value})} />
+          </Field>
+          <Field label="Correo">
+            <input style={input} type="email" value={f.email} onChange={e=>setF({...f, email:e.target.value})} />
+          </Field>
+          <Field label="Usuario (opcional)">
+            <input style={input} value={f.username} onChange={e=>setF({...f, username:e.target.value})} />
+          </Field>
+          {err && <div style={{color:C.red, fontSize:14, marginBottom:10}}>{err}</div>}
+          <div style={{display:"flex", gap:10, marginTop:6}}>
+            <button onClick={create} disabled={busy} style={{...btn(C.brand), opacity:busy?.6:1}}>
+              {busy ? "Creando…" : "Crear"}
+            </button>
+            <button onClick={()=>{setOpen(false); setErr("");}} style={btn(C.gray)}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {cred && (
+        <div style={{...card, marginTop:4, borderColor:C.green}}>
+          <div style={{fontFamily:"Sora", fontWeight:700, marginBottom:8}}>Preparador creado ✓</div>
+          <div style={{fontSize:14, color:C.sub, marginBottom:12}}>
+            Comparte estas credenciales con el preparador. Podrá cambiar la contraseña al entrar.
+          </div>
+          <div style={{...card, background:C.panel2, padding:14, fontSize:15, lineHeight:1.7}}>
+            <div><b>Correo:</b> {cred.email}</div>
+            <div><b>Usuario:</b> {cred.username || "—"}</div>
+            <div><b>Contraseña temporal:</b> <code style={{color:C.green}}>{cred.pwd}</code></div>
+          </div>
+          <div style={{display:"flex", gap:10, marginTop:14}}>
+            <button onClick={copy} style={btn(C.brand)}>{copied ? "¡Copiado!" : "Copiar"}</button>
+            <button onClick={()=>setCred(null)} style={btn(C.gray)}>Cerrar</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CoachRow({c, onDeleted}) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  async function remove() {
+    if (!confirm(`¿Eliminar al preparador ${c.full_name || c.email}? Se borrarán también sus equipos, sesiones y cargas. Esta acción no se puede deshacer.`)) return;
+    setBusy(true); setErr("");
+    const r = await callFn("delete-coach", { coach_id:c.id });
+    setBusy(false);
+    if (!r.ok) { setErr(r.errMsg); return; }
+    onDeleted();
+  }
+  return (
+    <div style={{...card, marginBottom:10}}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap"}}>
+        <div>
+          <div style={{fontWeight:700, fontSize:16}}>{c.full_name || "(sin nombre)"}</div>
+          <div style={{color:C.sub, fontSize:14}}>{c.email}{c.username ? ` · @${c.username}` : ""}</div>
+          <div style={{color:C.sub, fontSize:13, marginTop:4}}>
+            {c.athletes_count} deportista{c.athletes_count===1?"":"s"}
+          </div>
+        </div>
+        <button onClick={remove} disabled={busy || c.athletes_count>0}
+          title={c.athletes_count>0 ? "Reasigna o elimina sus deportistas antes de borrar el preparador" : ""}
+          style={{...btn(C.red), opacity:(busy||c.athletes_count>0)?.45:1, cursor:c.athletes_count>0?"not-allowed":"pointer"}}>
+          {busy ? "Eliminando…" : "Eliminar"}
+        </button>
+      </div>
+      {c.athletes_count>0 && (
+        <div style={{color:C.sub, fontSize:13, marginTop:10}}>
+          Reasigna o elimina sus deportistas antes de poder borrar el preparador.
+        </div>
+      )}
+      {err && <div style={{color:C.red, fontSize:14, marginTop:10}}>{err}</div>}
+    </div>
+  );
+}
+
+function AdminPanel({email, onLogout}) {
+  const [state, setState] = useState("loading"); // loading | ok | denied | error
+  const [coaches, setCoaches] = useState([]);
+  const [errMsg, setErrMsg] = useState("");
+
+  async function load() {
+    setState("loading");
+    const r = await callFn("list-coaches");
+    if (!r.ok) {
+      if (/no autorizado/i.test(r.errMsg)) { setState("denied"); return; }
+      setErrMsg(r.errMsg); setState("error"); return;
+    }
+    setCoaches(r.data.coaches || []);
+    setState("ok");
+  }
+  useEffect(() => { load(); }, []);
+
+  if (state === "denied") {
+    return (
+      <div style={{minHeight:"100dvh", display:"grid", placeItems:"center", padding:20}}>
+        <div style={{...card, maxWidth:400, textAlign:"center"}}>
+          <div style={{fontFamily:"Sora", fontWeight:800, fontSize:20, marginBottom:8}}>Acceso no autorizado</div>
+          <div style={{color:C.sub, fontSize:14, marginBottom:18}}>
+            La cuenta <b>{email}</b> no tiene permisos de administración.
+          </div>
+          <button onClick={onLogout} style={btn(C.gray)}>Salir</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{maxWidth:680, margin:"0 auto", padding:"24px 16px 60px"}}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6}}>
+        <div style={{fontFamily:"Sora", fontWeight:800, fontSize:22}}>CargIA · Administración</div>
+        <button onClick={onLogout} style={btn(C.gray, {padding:"9px 14px"})}>Salir</button>
+      </div>
+      <div style={{color:C.sub, fontSize:13, marginBottom:22}}>Conectado como {email}</div>
+
+      <CreateCoach onCreated={load} />
+
+      <div style={{fontFamily:"Sora", fontWeight:700, fontSize:16, margin:"6px 0 12px"}}>Preparadores</div>
+
+      {state === "loading" && <div style={{color:C.sub}}>Cargando…</div>}
+      {state === "error" && <div style={{color:C.red}}>{errMsg}</div>}
+      {state === "ok" && coaches.length === 0 && <div style={{color:C.sub}}>No hay preparadores todavía.</div>}
+      {state === "ok" && coaches.map(c => <CoachRow key={c.id} c={c} onDeleted={load} />)}
+    </div>
+  );
+}
+
+function App() {
+  const [session, setSession] = useState(undefined);
+  useEffect(() => {
+    db.auth.getSession().then(({data}) => setSession(data.session));
+    const { data: sub } = db.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) {
+    return <div style={{minHeight:"100dvh", display:"grid", placeItems:"center", color:C.sub}}>Cargando…</div>;
+  }
+  if (!session) return <Login />;
+  return <AdminPanel email={session.user.email} onLogout={()=>db.auth.signOut()} />;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
