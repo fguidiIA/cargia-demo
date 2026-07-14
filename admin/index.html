@@ -174,14 +174,35 @@ function CreateCoach({onCreated}) {
 function CoachRow({c, onDeleted}) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [cred, setCred] = useState(null);
+  const [copied, setCopied] = useState(false);
+
   async function remove() {
     if (!confirm(`¿Eliminar al preparador ${c.full_name || c.email}? Se borrarán también sus equipos, sesiones y cargas. Esta acción no se puede deshacer.`)) return;
-    setBusy(true); setErr("");
+    setBusy(true); setErr(""); setCred(null);
     const r = await callFn("delete-coach", { coach_id:c.id });
     setBusy(false);
     if (!r.ok) { setErr(r.errMsg); return; }
     onDeleted();
   }
+
+  async function resetPwd() {
+    if (!confirm(`¿Restablecer la contraseña de ${c.full_name || c.email}?\n\nSu contraseña actual dejará de funcionar de inmediato. Se generará una temporal que tendrás que entregarle.`)) return;
+    setBusy(true); setErr("");
+    const r = await callFn("reset-coach-password", { coach_id:c.id });
+    setBusy(false);
+    if (!r.ok) { setErr(r.errMsg); return; }
+    // No se recarga la lista a propósito: remontaría esta fila y haría
+    // desaparecer la tarjeta con la contraseña antes de poder copiarla.
+    setCred({ ...r.data.coach, pwd:r.data.password });
+  }
+
+  function copy() {
+    const txt = `CargIA · Preparador\nCorreo: ${cred.email}\nContraseña temporal: ${cred.pwd}\n\nEntra en https://cargia.app y cámbiala en Perfil → Cambiar contraseña.`;
+    if (navigator.clipboard) navigator.clipboard.writeText(txt);
+    setCopied(true); setTimeout(()=>setCopied(false), 1500);
+  }
+
   return (
     <div style={{...card, marginBottom:10}}>
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap"}}>
@@ -192,11 +213,18 @@ function CoachRow({c, onDeleted}) {
             {c.athletes_count} deportista{c.athletes_count===1?"":"s"}
           </div>
         </div>
-        <button onClick={remove} disabled={busy || c.athletes_count>0}
-          title={c.athletes_count>0 ? "Reasigna o elimina sus deportistas antes de borrar el preparador" : ""}
-          style={{...btn(C.red), opacity:(busy||c.athletes_count>0)?.45:1, cursor:c.athletes_count>0?"not-allowed":"pointer"}}>
-          {busy ? "Eliminando…" : "Eliminar"}
-        </button>
+        <div style={{display:"flex", gap:10, flexWrap:"wrap"}}>
+          <button onClick={resetPwd} disabled={busy}
+            title="Genera una contraseña temporal para este preparador"
+            style={{...btn(C.orange), opacity:busy?.45:1}}>
+            {busy ? "…" : "Restablecer contraseña"}
+          </button>
+          <button onClick={remove} disabled={busy || c.athletes_count>0}
+            title={c.athletes_count>0 ? "Reasigna o elimina sus deportistas antes de borrar el preparador" : ""}
+            style={{...btn(C.red), opacity:(busy||c.athletes_count>0)?.45:1, cursor:c.athletes_count>0?"not-allowed":"pointer"}}>
+            {busy ? "Eliminando…" : "Eliminar"}
+          </button>
+        </div>
       </div>
       {c.athletes_count>0 && (
         <div style={{color:C.sub, fontSize:13, marginTop:10}}>
@@ -204,6 +232,24 @@ function CoachRow({c, onDeleted}) {
         </div>
       )}
       {err && <div style={{color:C.red, fontSize:14, marginTop:10}}>{err}</div>}
+
+      {cred && (
+        <div style={{...card, marginTop:14, borderColor:C.green, background:C.panel2}}>
+          <div style={{fontFamily:"Sora", fontWeight:700, marginBottom:8}}>Contraseña restablecida ✓</div>
+          <div style={{fontSize:14, color:C.sub, marginBottom:12}}>
+            Entrégasela por un canal directo (llamada, mensaje), no por correo. Podrá cambiarla al entrar,
+            en Perfil → Cambiar contraseña. Esta tarjeta no se puede volver a mostrar.
+          </div>
+          <div style={{...card, background:C.panel, padding:14, fontSize:15, lineHeight:1.7}}>
+            <div><b>Correo:</b> {cred.email}</div>
+            <div><b>Contraseña temporal:</b> <code style={{color:C.green}}>{cred.pwd}</code></div>
+          </div>
+          <div style={{display:"flex", gap:10, marginTop:14}}>
+            <button onClick={copy} style={btn(C.brand)}>{copied ? "¡Copiado!" : "Copiar"}</button>
+            <button onClick={()=>setCred(null)} style={btn(C.gray)}>Cerrar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
