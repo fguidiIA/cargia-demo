@@ -107,6 +107,7 @@ const I18N = {
     st_active:"Activa", st_in_treatment:"En tratamiento", st_monitoring:"En seguimiento", st_recovered:"Recuperada",
     change_password:"Cambiar contraseña", new_password:"Nueva contraseña", repeat_password:"Repite la contraseña",
     pwd_mismatch:"Las contraseñas no coinciden", pwd_short:"Mínimo 6 caracteres", pwd_changed:"¡Contraseña actualizada!",
+    must_change_title:"Crea tu contraseña", must_change_intro:"Por seguridad, antes de continuar debes sustituir la contraseña temporal por una tuya.",
     bands:["Baja carga","Zona óptima","Precaución","Riesgo alto","Sin datos"],
     rpe:["Nada (reposo)","Muy, muy suave","Suave","Moderado","Algo duro","Duro",
          "Entre duro y muy duro","Muy duro","Muy, muy duro","Casi máximo","Máximo"],
@@ -166,6 +167,7 @@ const I18N = {
     st_active:"Active", st_in_treatment:"In treatment", st_monitoring:"Monitoring", st_recovered:"Recovered",
     change_password:"Change password", new_password:"New password", repeat_password:"Repeat password",
     pwd_mismatch:"Passwords don't match", pwd_short:"Minimum 6 characters", pwd_changed:"Password updated!",
+    must_change_title:"Set your password", must_change_intro:"For security, you must replace the temporary password with your own before continuing.",
     bands:["Undertraining","Sweet spot","Caution","High risk","No data"],
     rpe:["Rest (nothing at all)","Very, very easy","Easy","Moderate","Somewhat hard","Hard",
          "Hard to very hard","Very hard","Very, very hard","Near maximal","Maximal"],
@@ -385,12 +387,59 @@ function App() {
   if (session === undefined) content = <Splash t={t}/>;
   else if (!session) content = <Login t={t} LangToggle={LangToggle} />;
   else if (!profile) content = <Splash t={t}/>;
+  else if (profile.must_change_password)
+    content = <ForcePasswordChange t={t} LangToggle={LangToggle} profile={profile}
+                onDone={()=>setProfile({...profile, must_change_password:false})} />;
   else if (profile.role === "coach")
     content = <CoachApp t={t} lang={lang} LangToggle={LangToggle} profile={profile} />;
   else
     content = <AthleteApp t={t} lang={lang} LangToggle={LangToggle} profile={profile} />;
 
   return <div style={shell}>{content}</div>;
+}
+
+/* -------- Cambio de contraseña obligatorio (primer acceso / tras reset) --------
+   OJO: este bloqueo es SOLO de UX. La política RLS profiles_update_self permite
+   al propio usuario poner must_change_password=false por consola/API sin cambiar
+   la contraseña. Es higiene de contraseñas, no un control de seguridad; si algún
+   día hiciera falta reforzarlo, moverlo a una RPC SECURITY DEFINER. -------- */
+function ForcePasswordChange({t, LangToggle, profile, onDone}) {
+  const [p1,setP1] = useState(""); const [p2,setP2] = useState("");
+  const [msg,setMsg] = useState(""); const [busy,setBusy] = useState(false);
+  async function change(){
+    setMsg("");
+    if(p1.length<6){ setMsg(t.pwd_short); return; }
+    if(p1!==p2){ setMsg(t.pwd_mismatch); return; }
+    setBusy(true);
+    const { error } = await db.auth.updateUser({ password:p1 });
+    if(error){ setBusy(false); setMsg(error.message); return; }
+    const { error: pErr } = await db.from("profiles").update({ must_change_password:false }).eq("id", profile.id);
+    setBusy(false);
+    if(pErr){ setMsg(pErr.message); return; }
+    onDone();
+  }
+  return (
+    <div style={{padding:"28px 28px 48px", paddingTop:"calc(env(safe-area-inset-top) + 28px)", textAlign:"center"}}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:40}}>
+        <div style={{display:"flex", alignItems:"center", gap:10}}><Mark/><Brand fontSize={22}/></div>
+        <LangToggle/>
+      </div>
+      <div style={{display:"flex", justifyContent:"center", marginBottom:14}}><Mark size={56}/></div>
+      <h1 style={{margin:"0 0 8px", fontFamily:"Sora", fontSize:24}}>{t.must_change_title}</h1>
+      <p style={{color:C.sub, marginBottom:28, maxWidth:420, marginLeft:"auto", marginRight:"auto"}}>{t.must_change_intro}</p>
+      <div style={{maxWidth:380, margin:"0 auto", textAlign:"left"}}>
+        <Field label={t.new_password} type="password" value={p1} onChange={setP1}/>
+        <Field label={t.repeat_password} type="password" value={p2} onChange={setP2}/>
+        {msg && <div style={{color:C.red, fontSize:13, marginBottom:12}}>{msg}</div>}
+        <button disabled={busy} onClick={change} style={btn(C.brand,{width:"100%", marginBottom:12, opacity:busy?0.7:1})}>
+          {busy ? "…" : t.change_password}
+        </button>
+        <button onClick={()=>db.auth.signOut()} style={btn(C.panel2,{width:"100%", color:C.sub, border:`1px solid ${C.line}`})}>
+          {t.logout}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /* ---------------- Login ---------------- */
