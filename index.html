@@ -74,6 +74,8 @@ const I18N = {
     athletes_title:"Deportistas", new_athlete:"Nuevo deportista",
     temp_password:"Contraseña temporal",
     credentials_note:"Comparte estas credenciales con el deportista. Podrá cambiarlas al entrar.",
+    reset_password:"Restablecer contraseña", resetting:"Restableciendo…",
+    confirm_reset_athlete:"¿Restablecer la contraseña de este deportista? Se generará una nueva contraseña temporal.",
     copy:"Copiar", copied:"¡Copiado!", creating:"Creando…", show_acwr_athlete:"ACWR visible para el deportista",
     no_athletes:"Aún no has creado deportistas.",
     delete:"Eliminar", deleting:"Eliminando…",
@@ -131,6 +133,8 @@ const I18N = {
     athletes_title:"Athletes", new_athlete:"New athlete",
     temp_password:"Temporary password",
     credentials_note:"Share these credentials with the athlete. They can change them on first login.",
+    reset_password:"Reset password", resetting:"Resetting…",
+    confirm_reset_athlete:"Reset this athlete's password? A new temporary password will be generated.",
     copy:"Copy", copied:"Copied!", creating:"Creating…", show_acwr_athlete:"ACWR visible to athlete",
     no_athletes:"You haven't created any athletes yet.",
     delete:"Delete", deleting:"Deleting…",
@@ -577,6 +581,14 @@ function AthletesAdmin({t, athletes, reload}) {
     if(error || (data && data.error)){ setDelErr((data && data.error) || "No se pudo eliminar"); return; }
     reload();
   }
+  async function resetPassword(a){
+    if(!window.confirm(t.confirm_reset_athlete)) return;
+    setBusy(true); setDelErr(""); setCred(null);
+    const { data, error } = await db.functions.invoke("reset-athlete-password", { body:{ athlete_id:a.id } });
+    setBusy(false);
+    if(error || (data && data.error)){ setDelErr((data && data.error) || "No se pudo restablecer la contraseña"); return; }
+    setCred({ ...data.athlete, pwd:data.password });
+  }
 
   return (
     <div>
@@ -628,8 +640,9 @@ function AthletesAdmin({t, athletes, reload}) {
                   <div style={{fontWeight:600}}>{a.full_name}</div>
                   <div style={{color:C.sub, fontSize:13}}>{a.username||"—"} · {a.email||"—"}</div>
                 </div>
-                <div style={{display:"flex", gap:8, flexShrink:0}}>
+                <div style={{display:"flex", gap:8, flexShrink:0, flexWrap:"wrap", justifyContent:"flex-end"}}>
                   <button onClick={()=>startEdit(a)} style={btn(C.panel2,{padding:"7px 12px", fontSize:13, color:C.text})}>{t.edit}</button>
+                  <button disabled={busy} onClick={()=>resetPassword(a)} style={btn(C.panel2,{padding:"7px 12px", fontSize:13, color:C.text})}>{busy?t.resetting:t.reset_password}</button>
                   <button disabled={busy} onClick={()=>removeAthlete(a)} style={btn(C.panel2,{padding:"7px 12px", fontSize:13, color:C.red})}>{t.delete}</button>
                 </div>
               </div>
