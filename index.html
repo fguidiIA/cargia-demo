@@ -83,8 +83,22 @@ const I18N = {
     confirm_delete_athlete:"¿Eliminar este deportista y TODOS sus datos? Esta acción no se puede deshacer.",
     team_has_athletes:"Quita primero los deportistas para poder eliminar el equipo.",
     sessions_title:"Sesiones de entrenamiento", new_session:"Nueva sesión", select_team:"Equipo", date:"Fecha",
-    minutes_each:"Minutos por deportista (30–250)", completed:"completado", pending:"Pendiente", minutes_label:"min",
+    minutes_each:"Minutos por deportista (5–300)", completed:"completado", pending:"Pendiente", minutes_label:"min",
     no_sessions:"No hay sesiones todavía.", no_teams:"Crea primero un equipo con deportistas.",
+    session_name:"Nombre de la sesión (opcional)", attendees:"Convocados", select_all:"Todos", clear_all:"Ninguno",
+    injured_tag:"Lesionado", injured_hint:"Los lesionados salen desmarcados; puedes volver a marcarlos.",
+    edit_session:"Editar sesión", no_attendees:"Selecciona al menos un deportista.",
+    bad_minutes:"Los minutos deben estar entre 5 y 300.", bad_date:"Indica una fecha válida.",
+    create_failed:"No se pudo crear la sesión.", save_failed:"No se pudieron guardar los cambios.", delete_failed:"No se pudo eliminar la sesión.",
+    confirm_delete_session:(n)=> n>0
+      ? `¿Eliminar esta sesión? Se borrarán ${n} RPE ya entregados y esa carga dejará de contar para el ACWR. No se puede deshacer.`
+      : "¿Eliminar esta sesión? No se puede deshacer.",
+    confirm_remove_submitted:(n,names)=> `Vas a quitar de la sesión a ${n} deportista${n===1?"":"s"} que ya ha entregado su RPE (${names}). Se borrará ese RPE y esa carga dejará de contar para el ACWR. ¿Continuar?`,
+    all_teams:"Todos los equipos", all_athletes:"Todos los deportistas",
+    date_from:"Desde", date_to:"Hasta", search_sessions:"Buscar sesión o equipo", clear_filters:"Limpiar",
+    status_any:"Cualquier estado", status_done:"Completadas", status_partial:"Con pendientes", status_none:"Sin respuestas",
+    showing_n:(n,total)=>`${n} de ${total}`, no_match:"Ninguna sesión coincide con el filtro.",
+    rpe_failed:"No se pudo enviar tu RPE. Puede que el preparador haya modificado la sesión. Actualiza la página e inténtalo de nuevo.",
     results_title:"Carga", athlete_col:"Deportista", load_col:"Carga (últ.)",
     acute:"Aguda (7 d)", chronic:"Crónica (28 d)", acwr:"ACWR", no_data:"Sin datos",
     trend_load:"Carga por sesión", trend_wellness:"Bienestar por día", trend_window:"Últimos 28 días",
@@ -143,8 +157,22 @@ const I18N = {
     confirm_delete_athlete:"Delete this athlete and ALL their data? This cannot be undone.",
     team_has_athletes:"Remove athletes first to delete the team.",
     sessions_title:"Training sessions", new_session:"New session", select_team:"Team", date:"Date",
-    minutes_each:"Minutes per athlete (30–250)", completed:"completed", pending:"Pending", minutes_label:"min",
+    minutes_each:"Minutes per athlete (5–300)", completed:"completed", pending:"Pending", minutes_label:"min",
     no_sessions:"No sessions yet.", no_teams:"Create a team with athletes first.",
+    session_name:"Session name (optional)", attendees:"Called up", select_all:"All", clear_all:"None",
+    injured_tag:"Injured", injured_hint:"Injured athletes start unchecked; you can check them again.",
+    edit_session:"Edit session", no_attendees:"Pick at least one athlete.",
+    bad_minutes:"Minutes must be between 5 and 300.", bad_date:"Enter a valid date.",
+    create_failed:"Couldn't create the session.", save_failed:"Couldn't save the changes.", delete_failed:"Couldn't delete the session.",
+    confirm_delete_session:(n)=> n>0
+      ? `Delete this session? ${n} submitted RPE will be erased and that load will stop counting towards ACWR. This cannot be undone.`
+      : "Delete this session? This cannot be undone.",
+    confirm_remove_submitted:(n,names)=> `You are about to remove ${n} athlete${n===1?"":"s"} who already submitted their RPE (${names}). That RPE will be erased and the load will stop counting towards ACWR. Continue?`,
+    all_teams:"All teams", all_athletes:"All athletes",
+    date_from:"From", date_to:"To", search_sessions:"Search session or team", clear_filters:"Clear",
+    status_any:"Any status", status_done:"Completed", status_partial:"With pending", status_none:"No responses",
+    showing_n:(n,total)=>`${n} of ${total}`, no_match:"No session matches the filter.",
+    rpe_failed:"Couldn't submit your RPE. Your coach may have changed the session. Refresh the page and try again.",
     results_title:"Load", athlete_col:"Athlete", load_col:"Load (last)",
     acute:"Acute (7 d)", chronic:"Chronic (28 d)", acwr:"ACWR", no_data:"No data",
     trend_load:"Load per session", trend_wellness:"Wellness per day", trend_window:"Last 28 days",
@@ -203,6 +231,15 @@ function latestWellnessByAthlete(rows){ const m={}; for(const w of rows){ if(!m[
 const INJURY_STATUS = ["active","in_treatment","monitoring","recovered"];
 function injuryColor(s){ return s==="active"?C.red : s==="in_treatment"?C.orange : s==="monitoring"?C.blue : C.green; }
 function injuryStatusLabel(t,s){ return ({active:t.st_active,in_treatment:t.st_in_treatment,monitoring:t.st_monitoring,recovered:t.st_recovered})[s]||s; }
+// Estados de lesión que dejan al deportista FUERA de la convocatoria por defecto
+// al crear una sesión. Mismo criterio que las banderas inj_active / inj_treat de
+// athleteFlags: si se cambia aquí, revisar allí también.
+const INJURY_OUT_STATUS = ["active","in_treatment"];
+function injuredOutIds(injuries){
+  const s = new Set();
+  for(const i of (injuries||[])) if(INJURY_OUT_STATUS.includes(i.status)) s.add(i.athlete_id);
+  return s;
+}
 
 function useIsMobile(){
   const [m,setM] = useState(typeof window!=="undefined" && window.innerWidth < 640);
@@ -527,7 +564,7 @@ function CoachApp({t, lang, LangToggle, profile}) {
     const [a, tm, s, w, well, inj, cat] = await Promise.all([
       db.from("profiles").select("id,full_name,email,username,acwr_visible").eq("coach_id", profile.id).eq("role","athlete").order("full_name"),
       db.from("teams").select("id,name,team_members(athlete_id)").eq("coach_id", profile.id).order("name"),
-      db.from("sessions").select("id,team_id,session_date,session_athletes(id,athlete_id,minutes,rpe,submitted_at)").order("session_date",{ascending:false}),
+      db.from("sessions").select("id,team_id,session_date,name,session_athletes(id,athlete_id,minutes,rpe,submitted_at)").order("session_date",{ascending:false}),
       db.from("v_athlete_acwr").select("*"),
       db.from("wellness_entries").select("*").order("entry_date",{ascending:false}),
       db.from("injuries").select("*").order("onset_date",{ascending:false}),
@@ -552,7 +589,7 @@ function CoachApp({t, lang, LangToggle, profile}) {
       <div style={{padding:22}}>
         {loading ? <div style={{color:C.sub, padding:"30px 0", textAlign:"center"}}>{t.loading}</div> : (
           <React.Fragment>
-            {tab==="sessions" && <Sessions t={t} lang={lang} profile={profile} athletes={athletes} teams={teams} sessions={sessions} reload={loadAll}/>}
+            {tab==="sessions" && <Sessions t={t} lang={lang} profile={profile} athletes={athletes} teams={teams} sessions={sessions} injuries={injuries} reload={loadAll}/>}
             {tab==="results"  && <Results t={t} lang={lang} athletes={athletes} teams={teams} sessions={sessions} acwr={acwr} wellness={wellness} injuries={injuries} reload={loadAll}/>}
             {tab==="wellness" && <WellnessCoach t={t} lang={lang} athletes={athletes} teams={teams} wellness={wellness} acwr={acwr} injuries={injuries} sessions={sessions}/>}
             {tab==="injuries" && <InjuriesCoach t={t} lang={lang} profile={profile} athletes={athletes} injuries={injuries} catalog={catalog} reload={loadAll}/>}
@@ -816,27 +853,208 @@ function Teams({t, athletes, teams, reload}) {
   );
 }
 
-function Sessions({t, lang, profile, athletes, teams, sessions, reload}) {
+/* ---------------- Sesiones (preparador) ----------------
+   Crear (eligiendo convocados, con los lesionados fuera por defecto),
+   filtrar/buscar, editar en línea y eliminar.
+   Límite de minutos 5-300: debe coincidir con el check
+   session_athletes_minutes_check de la BD (migración 2026-08-02). */
+const MIN_MINUTES = 5, MAX_MINUTES = 300;
+
+// Fila de un deportista en el formulario de sesión (creación o edición):
+// chip pulsable + marca de lesionado + minutos. Los chips siguen el patrón de Teams.
+// IMPORTANTE: va a nivel de módulo, NO dentro de Sessions. Un componente definido
+// dentro de otro es una función nueva en cada render, así que React lo trata como
+// un tipo distinto, desmonta la fila y el input de minutos pierde el foco a cada tecla.
+function AthleteRow({t, label, injured, on, onToggle, minsMap, setMinsMap, aid}){
+  const minStyle = {width:82, padding:"9px 12px", borderRadius:10, background:C.panel2,
+                    border:`1px solid ${C.line}`, color:on?C.text:C.gray, opacity:on?1:0.5};
+  return (
+    <div style={{display:"flex", alignItems:"center", gap:10}}>
+      <button onClick={onToggle}
+        style={btn(on?C.brand:C.panel2,{flex:1, textAlign:"left", padding:"9px 13px", fontSize:14, color:on?"#fff":C.sub})}>
+        {on ? "✓ " : "○ "}{label}
+      </button>
+      {injured && (
+        <span style={{fontSize:11.5, fontWeight:700, color:C.red, background:C.panel2,
+          border:`1px solid ${C.red}`, borderRadius:999, padding:"3px 9px", whiteSpace:"nowrap"}}>
+          ✚ {t.injured_tag}
+        </span>
+      )}
+      <input type="number" min={MIN_MINUTES} max={MAX_MINUTES} disabled={!on} value={minsMap[aid]??90}
+        onChange={(e)=>setMinsMap({...minsMap,[aid]:e.target.value})} style={minStyle}/>
+      <span style={{color:C.sub, fontSize:13}}>{t.minutes_label}</span>
+    </div>
+  );
+}
+
+function Sessions({t, lang, profile, athletes, teams, sessions, injuries, reload}) {
+  // --- creación ---
   const [creating,setCreating] = useState(false);
-  const [teamId,setTeamId] = useState(teams[0]?teams[0].id:"");
-  const [dateStr,setDateStr] = useState(new Date().toISOString().slice(0,10));
-  const [mins,setMins] = useState({});
+  const [teamId,setTeamId]     = useState(teams[0]?teams[0].id:"");
+  // cutoffDateStr(0) = hoy en HORA LOCAL. new Date().toISOString() daba UTC y
+  // de madrugada proponía el día anterior.
+  const [dateStr,setDateStr]   = useState(cutoffDateStr(0));
+  const [sName,setSName]       = useState("");
+  const [picked,setPicked]     = useState([]);
+  const [mins,setMins]         = useState({});
+  // --- edición en línea ---
+  const [editingId,setEditingId] = useState(null);
+  const [editF,setEditF]         = useState({name:"", dateStr:"", picked:[], mins:{}});
+  // --- filtros ---
+  const [fTeam,setFTeam]       = useState("");
+  const [fAthlete,setFAthlete] = useState("");
+  const [fFrom,setFFrom]       = useState("");
+  const [fTo,setFTo]           = useState("");
+  const [fStatus,setFStatus]   = useState("any");
+  const [q,setQ]               = useState("");
+  // --- comunes ---
   const [busy,setBusy] = useState(false);
+  const [err,setErr]   = useState("");
+
   const team = teams.find(x=>x.id===teamId);
+  const injuredOut = useMemo(()=> injuredOutIds(injuries), [injuries]);
+  const nameOf = (aid)=>{ const a=athletes.find(x=>x.id===aid); return a?a.full_name:"—"; };
+
+  // Al abrir el formulario o cambiar de equipo se preseleccionan todos MENOS
+  // los lesionados. Es una sugerencia: el coach puede volver a marcarlos.
+  useEffect(()=>{
+    if(!creating) return;
+    const tm = teams.find(x=>x.id===teamId);
+    setPicked((tm?tm.memberIds:[]).filter(id=>!injuredOut.has(id)));
+    setMins({}); setErr("");
+  }, [creating, teamId, teams, injuredOut]);
+
+  // Minúsculas y sin acentos, para que "martinez" encuentre "Martínez".
+  const norm = (s)=> (s||"").toLowerCase().normalize("NFD").replace(DIACRITICS,"");
+
+  const filtered = useMemo(()=>{
+    const needle = norm(q.trim());
+    return sessions.filter(s=>{
+      if(fTeam && s.team_id !== fTeam) return false;
+      if(fFrom && s.session_date < fFrom) return false;   // strings YYYY-MM-DD comparables
+      if(fTo   && s.session_date > fTo)   return false;
+      if(fStatus !== "any" && sessionStatus(s) !== fStatus) return false;
+      if(fAthlete && !(s.session_athletes||[]).some(e=>e.athlete_id===fAthlete)) return false;
+      if(needle){
+        const tm = teams.find(x=>x.id===s.team_id);
+        if(!norm(`${s.name||""} ${tm?tm.name:""}`).includes(needle)) return false;
+      }
+      return true;
+    });
+  }, [sessions, teams, fTeam, fAthlete, fFrom, fTo, fStatus, q]);
+
+  const filtersOn = !!(fTeam || fAthlete || fFrom || fTo || q.trim() || fStatus!=="any");
+  function clearFilters(){ setFTeam(""); setFAthlete(""); setFFrom(""); setFTo(""); setFStatus("any"); setQ(""); }
+
+  // Minutos válidos para un deportista, o null si el valor no sirve.
+  function minutesFor(map, aid){
+    const raw = map[aid];
+    const n = (raw===undefined || raw==="") ? 90 : parseInt(raw,10);
+    return (!Number.isFinite(n) || n<MIN_MINUTES || n>MAX_MINUTES) ? null : n;
+  }
 
   async function create(){
-    if(!team) return;
-    setBusy(true);
-    const { data: ses } = await db.from("sessions")
-      .insert({ team_id:teamId, session_date:dateStr, created_by:profile.id }).select("id").single();
-    if(ses){
-      const rows = team.memberIds.map(aid=>({ session_id:ses.id, athlete_id:aid,
-        minutes: Math.min(250, Math.max(30, parseInt(mins[aid]||90))) }));
-      await db.from("session_athletes").insert(rows);
+    const tm = teams.find(x=>x.id===teamId);
+    if(!tm) return;
+    setErr("");
+    if(picked.length===0){ setErr(t.no_attendees); return; }
+    // Validar ANTES de tocar la BD: parseInt("abc") daba NaN, violaba
+    // `minutes not null` y el error se perdía dejando una sesión huérfana.
+    const rows = [];
+    for(const aid of picked){
+      const n = minutesFor(mins, aid);
+      if(n===null){ setErr(t.bad_minutes); return; }
+      rows.push({ athlete_id:aid, minutes:n });
     }
-    setBusy(false); setCreating(false); setMins({});
+    setBusy(true);
+    const { data: ses, error: e1 } = await db.from("sessions")
+      .insert({ team_id:teamId, session_date:dateStr, name:sName.trim()||null, created_by:profile.id })
+      .select("id").single();
+    if(e1 || !ses){ setBusy(false); setErr(t.create_failed); return; }
+    const { error: e2 } = await db.from("session_athletes")
+      .insert(rows.map(r=>({ session_id:ses.id, ...r })));
+    if(e2){
+      // Sin transacción: si falla el segundo insert hay que deshacer el primero
+      // o queda una sesión sin deportistas (ya pasó en producción).
+      await db.from("sessions").delete().eq("id", ses.id);
+      setBusy(false); setErr(t.create_failed); return;
+    }
+    setBusy(false); setCreating(false);
+    setSName(""); setMins({}); setPicked([]);
     reload();
   }
+
+  function startEdit(s){
+    const entries = s.session_athletes||[];
+    const m = {};
+    for(const e of entries) m[e.athlete_id] = String(e.minutes);
+    setEditingId(s.id);
+    setEditF({ name:s.name||"", dateStr:s.session_date, picked:entries.map(e=>e.athlete_id), mins:m });
+    setErr("");
+  }
+
+  async function saveEdit(s){
+    setErr("");
+    const cur    = s.session_athletes||[];
+    const curIds = cur.map(e=>e.athlete_id);
+    const next   = editF.picked;
+    if(next.length===0){ setErr(t.no_attendees); return; }
+    if(!editF.dateStr){ setErr(t.bad_date); return; }
+    for(const aid of next) if(minutesFor(editF.mins, aid)===null){ setErr(t.bad_minutes); return; }
+
+    const toAdd    = next.filter(id=>!curIds.includes(id));
+    const toRemove = cur.filter(e=>!next.includes(e.athlete_id));
+    // parseInt: e.minutes llega como número y el input da string; sin esto
+    // toda fila parecería modificada y se harían UPDATE innecesarios.
+    const toUpdate = cur.filter(e=> next.includes(e.athlete_id) &&
+                                    parseInt(editF.mins[e.athlete_id],10) !== e.minutes);
+
+    // Aviso antes de destruir RPE ya entregados. Se cuenta submitted_at O rpe:
+    // el listado usa submitted_at pero v_athlete_acwr usa `rpe is not null`.
+    const lost = toRemove.filter(e=> e.submitted_at || e.rpe!=null);
+    if(lost.length){
+      if(!window.confirm(t.confirm_remove_submitted(lost.length, lost.map(e=>nameOf(e.athlete_id)).join(", ")))) return;
+    }
+
+    setBusy(true);
+    // Escrituras de menos a más destructivo: si algo falla antes, no se ha
+    // borrado nada. Las bajas van las últimas porque son irreversibles.
+    const nameNext = editF.name.trim()||null;
+    if(nameNext !== (s.name||null) || editF.dateStr !== s.session_date){
+      const { error } = await db.from("sessions")
+        .update({ name:nameNext, session_date:editF.dateStr }).eq("id", s.id);
+      if(error){ setBusy(false); setErr(t.save_failed); return; }
+    }
+    for(const e of toUpdate){
+      const { error } = await db.from("session_athletes")
+        .update({ minutes: minutesFor(editF.mins, e.athlete_id) }).eq("id", e.id);
+      if(error){ setBusy(false); setErr(t.save_failed); reload(); return; }
+    }
+    if(toAdd.length){
+      const { error } = await db.from("session_athletes")
+        .insert(toAdd.map(aid=>({ session_id:s.id, athlete_id:aid, minutes:minutesFor(editF.mins, aid) })));
+      if(error){ setBusy(false); setErr(t.save_failed); reload(); return; }
+    }
+    if(toRemove.length){
+      const { error } = await db.from("session_athletes").delete().in("id", toRemove.map(e=>e.id));
+      if(error){ setBusy(false); setErr(t.save_failed); reload(); return; }
+    }
+    setBusy(false); setEditingId(null);
+    reload();
+  }
+
+  async function removeSession(s){
+    const entries = s.session_athletes||[];
+    const n = entries.filter(e=> e.submitted_at || e.rpe!=null).length;
+    if(!window.confirm(t.confirm_delete_session(n))) return;
+    setBusy(true); setErr("");
+    const { error } = await db.from("sessions").delete().eq("id", s.id);
+    setBusy(false);
+    if(error){ setErr(t.delete_failed); return; }
+    reload();
+  }
+
+  const selStyle = {padding:"10px 13px", borderRadius:11, background:C.panel2, border:`1px solid ${C.line}`, color:C.text, fontSize:14};
 
   return (
     <div>
@@ -845,7 +1063,9 @@ function Sessions({t, lang, profile, athletes, teams, sessions, reload}) {
         {!creating && teams.length>0 && <button onClick={()=>setCreating(true)} style={btn(C.brand)}>{t.new_session}</button>}
       </div>
       {teams.length===0 && <div style={{color:C.sub, marginBottom:16}}>{t.no_teams}</div>}
+      {err && !editingId && !creating && <div style={{color:C.red, fontSize:13, marginBottom:12}}>{err}</div>}
 
+      {/* ---- Formulario de creación ---- */}
       {creating && team && (
         <div style={{...card, marginBottom:16}}>
           <label style={{display:"block", marginBottom:14}}>
@@ -855,54 +1075,136 @@ function Sessions({t, lang, profile, athletes, teams, sessions, reload}) {
               {teams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
             </select>
           </label>
+          <Field label={t.session_name} value={sName} onChange={(v)=>setSName(v.slice(0,60))}/>
           <Field label={t.date} type="date" value={dateStr} onChange={setDateStr}/>
-          <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.minutes_each}</span>
-          <div style={{display:"grid", gap:8, margin:"8px 0 16px"}}>
-            {team.memberIds.map(aid=>{ const a=athletes.find(x=>x.id===aid);
-              return (
-                <div key={aid} style={{display:"flex", alignItems:"center", gap:12}}>
-                  <span style={{flex:1}}>{a?a.full_name:"—"}</span>
-                  <input type="number" min={30} max={250} value={mins[aid]??90}
-                    onChange={(e)=>setMins({...mins,[aid]:e.target.value})}
-                    style={{width:90, padding:"9px 12px", borderRadius:10, background:C.panel2, border:`1px solid ${C.line}`, color:C.text}}/>
-                  <span style={{color:C.sub, fontSize:13}}>{t.minutes_label}</span>
-                </div>
-              );})}
+
+          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8}}>
+            <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.attendees} · {t.minutes_each}</span>
+            <div style={{display:"flex", gap:8}}>
+              <button onClick={()=>setPicked(team.memberIds.slice())} style={btn(C.panel2,{padding:"6px 12px", fontSize:12.5, color:C.sub})}>{t.select_all}</button>
+              <button onClick={()=>setPicked([])} style={btn(C.panel2,{padding:"6px 12px", fontSize:12.5, color:C.sub})}>{t.clear_all}</button>
+            </div>
           </div>
+          {team.memberIds.some(id=>injuredOut.has(id)) &&
+            <div style={{color:C.sub, fontSize:12.5, marginTop:6}}>{t.injured_hint}</div>}
+
+          <div style={{display:"grid", gap:8, margin:"8px 0 16px"}}>
+            {team.memberIds.map(aid=>(
+              <AthleteRow key={aid} t={t} aid={aid} label={nameOf(aid)} injured={injuredOut.has(aid)}
+                on={picked.includes(aid)}
+                onToggle={()=>setPicked(picked.includes(aid)?picked.filter(x=>x!==aid):[...picked,aid])}
+                minsMap={mins} setMinsMap={setMins}/>
+            ))}
+          </div>
+
+          {err && <div style={{color:C.red, fontSize:13, marginBottom:12}}>{err}</div>}
           <div style={{display:"flex", gap:10}}>
             <button disabled={busy} onClick={create} style={btn(C.brand,{opacity:busy?0.7:1})}>{t.create}</button>
-            <button onClick={()=>setCreating(false)} style={btn(C.panel2,{color:C.sub})}>{t.cancel}</button>
+            <button onClick={()=>{setCreating(false); setErr("");}} style={btn(C.panel2,{color:C.sub})}>{t.cancel}</button>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Barra de filtros ---- */}
+      {sessions.length>0 && (
+        <div style={{...card, marginBottom:16, padding:14}}>
+          <div style={{display:"flex", flexWrap:"wrap", gap:8, alignItems:"center"}}>
+            <select value={fTeam} onChange={(e)=>setFTeam(e.target.value)} style={{...selStyle, flex:"1 1 150px"}}>
+              <option value="">{t.all_teams}</option>
+              {teams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+            </select>
+            <select value={fAthlete} onChange={(e)=>setFAthlete(e.target.value)} style={{...selStyle, flex:"1 1 150px"}}>
+              <option value="">{t.all_athletes}</option>
+              {athletes.map(a=><option key={a.id} value={a.id}>{a.full_name}</option>)}
+            </select>
+            <select value={fStatus} onChange={(e)=>setFStatus(e.target.value)} style={{...selStyle, flex:"1 1 150px"}}>
+              <option value="any">{t.status_any}</option>
+              <option value="done">{t.status_done}</option>
+              <option value="partial">{t.status_partial}</option>
+              <option value="none">{t.status_none}</option>
+            </select>
+          </div>
+          <div style={{display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginTop:8}}>
+            <input type="date" value={fFrom} onChange={(e)=>setFFrom(e.target.value)} title={t.date_from} style={{...selStyle, flex:"1 1 130px"}}/>
+            <input type="date" value={fTo} onChange={(e)=>setFTo(e.target.value)} title={t.date_to} style={{...selStyle, flex:"1 1 130px"}}/>
+            <input type="text" value={q} onChange={(e)=>setQ(e.target.value)} placeholder={t.search_sessions} style={{...selStyle, flex:"2 1 180px"}}/>
+          </div>
+          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:10, gap:8}}>
+            <span style={{color:C.sub, fontSize:12.5}}>{t.showing_n(filtered.length, sessions.length)}</span>
+            {filtersOn && <button onClick={clearFilters} style={btn(C.panel2,{padding:"6px 12px", fontSize:12.5, color:C.sub})}>{t.clear_filters}</button>}
           </div>
         </div>
       )}
 
       {sessions.length===0 && !creating && <div style={{color:C.sub}}>{t.no_sessions}</div>}
+      {sessions.length>0 && filtered.length===0 && <div style={{color:C.sub}}>{t.no_match}</div>}
+
+      {/* ---- Listado ---- */}
       <div style={{display:"grid", gap:12}}>
-        {sessions.map(s=>{ const tm=teams.find(x=>x.id===s.team_id);
-          const entries=s.session_athletes||[];
-          const done=entries.filter(e=>e.submitted_at).length;
+        {filtered.map(s=>{
+          const tm      = teams.find(x=>x.id===s.team_id);
+          const entries = s.session_athletes||[];
+          const done    = entries.filter(e=>e.submitted_at).length;
+          const st      = sessionStatus(s);
+          const stColor = st==="done"?C.green : st==="partial"?C.orange : C.gray;
+
+          if(editingId===s.id){
+            // Roster = miembros actuales del equipo UNIDOS a los que ya tienen
+            // fila. Sin la unión, quien salió del equipo tras la sesión seguiría
+            // contando en el done/total siendo invisible e imposible de quitar.
+            const roster = Array.from(new Set([...(tm?tm.memberIds:[]), ...entries.map(e=>e.athlete_id)]));
+            return (
+              <div key={s.id} style={{...card, borderLeft:`6px solid ${C.brand}`}}>
+                <div style={{fontFamily:"Sora", fontWeight:700, marginBottom:12}}>
+                  {t.edit_session} · {tm?tm.name:"—"}
+                </div>
+                <Field label={t.session_name} value={editF.name} onChange={(v)=>setEditF({...editF, name:v.slice(0,60)})}/>
+                <Field label={t.date} type="date" value={editF.dateStr} onChange={(v)=>setEditF({...editF, dateStr:v})}/>
+                <span style={{color:C.sub, fontSize:13, fontWeight:600}}>{t.attendees} · {t.minutes_each}</span>
+                <div style={{display:"grid", gap:8, margin:"8px 0 16px"}}>
+                  {roster.map(aid=>(
+                    <AthleteRow key={aid} t={t} aid={aid} label={nameOf(aid)} injured={injuredOut.has(aid)}
+                      on={editF.picked.includes(aid)}
+                      onToggle={()=>setEditF({...editF, picked: editF.picked.includes(aid)
+                        ? editF.picked.filter(x=>x!==aid) : [...editF.picked, aid]})}
+                      minsMap={editF.mins} setMinsMap={(m)=>setEditF({...editF, mins:m})}/>
+                  ))}
+                </div>
+                {err && <div style={{color:C.red, fontSize:13, marginBottom:12}}>{err}</div>}
+                <div style={{display:"flex", gap:10, flexWrap:"wrap"}}>
+                  <button disabled={busy} onClick={()=>saveEdit(s)} style={btn(C.brand,{opacity:busy?0.7:1})}>{t.save}</button>
+                  <button onClick={()=>{setEditingId(null); setErr("");}} style={btn(C.panel2,{color:C.sub})}>{t.cancel}</button>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={s.id} style={card}>
-              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-                <div>
-                  <div style={{fontWeight:700, fontFamily:"Sora"}}>{tm?tm.name:"—"}</div>
-                  <div style={{color:C.sub, fontSize:13}}>{fmtDate(s.session_date, lang)}</div>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, flexWrap:"wrap"}}>
+                <div style={{minWidth:0}}>
+                  <div style={{fontWeight:700, fontFamily:"Sora"}}>{s.name || (tm?tm.name:"—")}</div>
+                  <div style={{color:C.sub, fontSize:13}}>
+                    {fmtDate(s.session_date, lang)}{s.name && tm ? ` · ${tm.name}` : ""}
+                  </div>
                 </div>
-                <div style={{fontSize:13, color:done===entries.length?C.green:C.orange, fontWeight:700}}>
-                  {done}/{entries.length} {t.completed}
+                <div style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}}>
+                  <span style={{fontSize:13, color:stColor, fontWeight:700}}>{done}/{entries.length} {t.completed}</span>
+                  <button onClick={()=>startEdit(s)} style={btn(C.panel2,{padding:"7px 14px", fontSize:13, color:C.sub})}>{t.edit}</button>
+                  <button disabled={busy} onClick={()=>removeSession(s)} style={btn(C.panel2,{padding:"7px 14px", fontSize:13, color:C.red, opacity:busy?0.7:1})}>{t.delete}</button>
                 </div>
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:6, marginTop:12}}>
-                {entries.map(e=>{ const a=athletes.find(x=>x.id===e.athlete_id);
-                  return (
-                    <span key={e.id} style={{background:C.panel2, padding:"5px 11px", borderRadius:999, fontSize:12.5,
-                      borderLeft:`3px solid ${e.submitted_at?C.green:C.orange}`}}>
-                      {a?a.full_name:"—"} · {e.submitted_at?`RPE ${e.rpe}`:t.pending}
-                    </span>
-                  );})}
+                {entries.map(e=>(
+                  <span key={e.id} style={{background:C.panel2, padding:"5px 11px", borderRadius:999, fontSize:12.5,
+                    borderLeft:`3px solid ${e.submitted_at?C.green:C.orange}`}}>
+                    {nameOf(e.athlete_id)} · {e.minutes}{t.minutes_label} · {e.submitted_at?`RPE ${e.rpe}`:t.pending}
+                  </span>
+                ))}
               </div>
             </div>
-          );})}
+          );
+        })}
       </div>
     </div>
   );
@@ -919,6 +1221,22 @@ function cutoffDateStr(daysBack){
   const mm = String(d.getMonth()+1).padStart(2,"0");
   const dd = String(d.getDate()).padStart(2,"0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+// Marcas diacríticas de Unicode (los acentos que deja sueltos normalize("NFD")).
+// Se construye con RegExp y escapes en vez de con un literal /[...]/ para no
+// meter caracteres combinantes sueltos en el archivo.
+const DIACRITICS = new RegExp("[\\u0300-\\u036f]", "g");
+
+// Estado de entrega de una sesión: "done" | "partial" | "none".
+// Una sesión SIN deportistas cuenta como "none": hoy se pintaba 0/0 en verde,
+// que hacía invisibles las sesiones huérfanas.
+function sessionStatus(s){
+  const e = s.session_athletes || [];
+  if(e.length===0) return "none";
+  const done = e.filter(x=>x.submitted_at).length;
+  if(done===0) return "none";
+  return done===e.length ? "done" : "partial";
 }
 
 function lastLoadFor(sessions, aid){
@@ -1431,7 +1749,7 @@ function AthleteApp({t, lang, LangToggle, profile}) {
   async function loadMine(){
     const [s, w, inj] = await Promise.all([
       db.from("session_athletes")
-        .select("id,minutes,rpe,submitted_at,sessions(id,session_date,team_id,teams(name))")
+        .select("id,minutes,rpe,submitted_at,sessions(id,session_date,name,team_id,teams(name))")
         .eq("athlete_id", profile.id),
       db.from("v_athlete_acwr").select("*").eq("athlete_id", profile.id),
       db.from("injuries").select("*").eq("athlete_id", profile.id).order("onset_date",{ascending:false}),
@@ -1439,6 +1757,7 @@ function AthleteApp({t, lang, LangToggle, profile}) {
     const list = (s.data||[]).map(r=>({
       id:r.id, minutes:r.minutes, rpe:r.rpe, submitted_at:r.submitted_at,
       session_date:r.sessions ? r.sessions.session_date : null,
+      session_name:r.sessions ? r.sessions.name : null,
       team_name:r.sessions && r.sessions.teams ? r.sessions.teams.name : "—",
     })).filter(r=>r.session_date).sort((a,b)=> a.session_date < b.session_date ? 1 : -1);
     setSessions(list);
@@ -1449,7 +1768,12 @@ function AthleteApp({t, lang, LangToggle, profile}) {
   useEffect(()=>{ loadMine(); }, []);
 
   async function submit(id, rpe){
-    await db.rpc("submit_rpe", { p_session_athlete:id, p_rpe:rpe });
+    // Hay que mirar el error: si el preparador ha borrado o rehecho la sesión,
+    // submit_rpe lanza "Sesión no encontrada o no autorizada". Sin este aviso
+    // la pantalla se cerraba como si hubiera guardado y el deportista se
+    // quedaba creyendo que había entregado su RPE.
+    const { error } = await db.rpc("submit_rpe", { p_session_athlete:id, p_rpe:rpe });
+    if(error) alert(t.rpe_failed);
     setActive(null);
     loadMine();
   }
@@ -1488,8 +1812,11 @@ function AthleteApp({t, lang, LangToggle, profile}) {
                 {sessions.map(s=>(
                   <div key={s.id} style={{...card, display:"flex", justifyContent:"space-between", alignItems:"center", gap:12}}>
                     <div>
-                      <div style={{fontWeight:700}}>{s.team_name}</div>
-                      <div style={{color:C.sub, fontSize:13}}>{fmtDate(s.session_date, lang)} · {s.minutes} {t.minutes_label}</div>
+                      <div style={{fontWeight:700}}>{s.session_name || s.team_name}</div>
+                      <div style={{color:C.sub, fontSize:13}}>
+                        {fmtDate(s.session_date, lang)} · {s.minutes} {t.minutes_label}
+                        {s.session_name ? ` · ${s.team_name}` : ""}
+                      </div>
                     </div>
                     {s.submitted_at
                       ? <span style={{color:C.green, fontWeight:700, fontSize:14}}>✓ {t.done} (RPE {s.rpe})</span>
