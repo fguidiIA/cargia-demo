@@ -52,7 +52,6 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const DEMO = { email: "coach@demo.es", password: "Demo1234!" };
 
 const C = {
   bg:"#0c1322", panel:"#141d31", panel2:"#1b2740", line:"#27324d", text:"#eef2fb",
@@ -65,7 +64,7 @@ const I18N = {
   es: {
     tagline:"Control de carga de entrenamiento",
     email_label:"Correo", password_label:"Contraseña", enter:"Entrar", signing_in:"Entrando…",
-    demo_mode:"Entrar en modo demo", login_error:"Correo o contraseña incorrectos",
+    login_error:"Correo o contraseña incorrectos",
     loading:"Cargando…", logout:"Salir",
     nav_profile:"Perfil", nav_athletes:"Deportistas", nav_teams:"Equipos", nav_sessions:"Sesiones", nav_results:"Carga",
     name:"Nombre", email:"Correo", username:"Usuario", role:"Rol", save:"Guardar", saved:"¡Guardado!",
@@ -139,7 +138,7 @@ const I18N = {
   en: {
     tagline:"Training load monitoring",
     email_label:"Email", password_label:"Password", enter:"Sign in", signing_in:"Signing in…",
-    demo_mode:"Enter demo mode", login_error:"Wrong email or password",
+    login_error:"Wrong email or password",
     loading:"Loading…", logout:"Sign out",
     nav_profile:"Profile", nav_athletes:"Athletes", nav_teams:"Teams", nav_sessions:"Sessions", nav_results:"Load",
     name:"Name", email:"Email", username:"Username", role:"Role", save:"Save", saved:"Saved!",
@@ -510,13 +509,6 @@ function Login({t, LangToggle}) {
           style={btn(C.brand,{width:"100%", marginBottom:12, opacity:busy?0.7:1})}>
           {busy ? t.signing_in : t.enter}
         </button>
-        <button disabled={busy} onClick={()=>signIn(DEMO.email, DEMO.password)}
-          style={btn(C.panel2,{width:"100%", color:C.text, border:`1px solid ${C.line}`})}>
-          {t.demo_mode}
-        </button>
-        <p style={{color:C.gray, fontSize:12, marginTop:18, textAlign:"center"}}>
-          Demo: coach@demo.es · lucia@demo.es — Demo1234!
-        </p>
       </div>
     </div>
   );
